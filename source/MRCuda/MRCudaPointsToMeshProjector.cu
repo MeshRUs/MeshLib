@@ -25,6 +25,23 @@ __device__ Box3 Matrix4::transform( const Box3& box ) const
     return res;
 }
 
+__device__ Matrix4 Matrix4::inverse() const
+{
+    const float det = x.x * ( y.y * z.z - y.z * z.y )
+        - x.y * ( y.x * z.z - y.z * z.x )
+        + x.z * ( y.x * z.y - y.y * z.x );
+
+    if ( det == 0 )
+        return {};
+
+    return
+    {
+        { ( y.y * z.z - y.z * z.y ) / det, ( x.z * z.y - x.y * z.z ) / det, ( x.y * y.z - x.z * y.y ) / det },
+        { ( y.z * z.x - y.x * z.z ) / det, ( x.x * z.z - x.z * z.x ) / det, ( x.z * y.x - x.x * y.z ) / det },
+        { ( y.x * z.y - y.y * z.x ) / det, ( x.y * z.x - x.x * z.y ) / det, ( x.x * y.y - x.y * y.x ) / det }
+    };
+}
+
 __device__ bool Node3::leaf() const
 {
     return r < 0;
@@ -60,50 +77,42 @@ __device__ ClosestPointRes closestPointInTriangle( const float3& p, const float3
 {
     const float3 ab = b - a;
     const float3 ac = c - a;
-    const float3 ap = p - a;
 
-    const float d1 = dot( ab, ap );
-    const float d2 = dot( ac, ap );
-    if ( d1 <= 0 && d2 <= 0 )
-        return { { 0, 0 }, a };
-
-    const float3 bp = p - b;
-    const float d3 = dot( ab, bp );
-    const float d4 = dot( ac, bp );
-    if ( d3 >= 0 && d4 <= d3 )
-        return { { 1, 0 }, b };
-
-    const float3 cp = p - c;
-    const float d5 = dot( ab, cp );
-    const float d6 = dot( ac, cp );
-    if ( d6 >= 0 && d5 <= d6 )
-        return { { 0, 1 }, c };
-
-    const float vc = d1 * d4 - d3 * d2;
-    if ( vc <= 0 && d1 >= 0 && d3 <= 0 )
+    const Matrix4 transform{ ab, ac, cross( ab, ac ) };
+    const Matrix4 invTransform = transform.inverse();
+    const float3 pp = invTransform.transform( p - a );
+    if ( pp.x < 0 )
     {
-        const float v = d1 / ( d1 - d3 );
-        return { { v, 0 }, a + ab * v };
+        if ( pp.y < 0 )
+            return { { 0, 0 }, a + transform.transform( float3{ 0, 0 ,0 } ) };
+        if ( pp.y < 1 )
+            return { { 0, pp.y }, a + transform.transform( float3 {0, pp.y, 0 } ) };
+
+        return { { 0, 1 }, a + transform.transform( float3{ 0, 1, 0 } ) };
     }
 
-    const float vb = d5 * d2 - d1 * d6;
-    if ( vb <= 0 && d2 >= 0 && d6 <= 0 )
+    if ( pp.y < 0 )
     {
-        const float v = d2 / ( d2 - d6 );
-        return { { 0, v }, a + ac * v };
+        if ( pp.x < 1 )
+            return { { pp.x, 0 }, a + transform.transform( float3 { pp.x, 0, 0 } ) };
+
+        return { { 1, 0 }, a + transform.transform( float3{ 1, 0, 0 } ) };
     }
 
-    const float va = d3 * d6 - d5 * d4;
-    if ( va <= 0 && ( d4 - d3 ) >= 0 && ( d5 - d6 ) >= 0 )
+    if ( pp.y > 1 - pp.x )
     {
-        const float v = ( d4 - d3 ) / ( ( d4 - d3 ) + ( d5 - d6 ) );
-        return { { 1 - v, v }, b + ( c - b ) * v };
-    }
+        if ( pp.y < pp.x - 1 )
+            return { { 1, 0 }, a + transform.transform( float3{ 1, 0, 0 } ) };
 
-    const float denom = 1 / ( va + vb + vc );
-    const float v = vb * denom;
-    const float w = vc * denom;
-    return { { v, w }, a + ab * v + ac * w };
+        if ( pp.y > pp.x + 1 )
+            return { { 0, 1 }, a + transform.transform( float3{ 0, 1, 0 } ) };
+
+        const float x = ( pp.x - pp.y + 1 ) * 0.5f;
+        const float y = ( pp.y - pp.x + 1 ) * 0.5f;
+        return { { x, y }, a + transform.transform( float3{ x, y ,0 } ) };
+    }
+        
+    return { {pp.x, pp.y}, a + transform.transform( float3{ pp.x,pp.y, 0 } ) };
 }
 
 __global__ void kernel( const float3* points, const Node3* nodes, const float3* meshPoints, const HalfEdgeRecord* edges, const int* edgePerFace, MeshProjectionResult* resVec, const Matrix4 xf, const Matrix4 refXf, float upDistLimitSq, float loDistLimitSq, size_t size )

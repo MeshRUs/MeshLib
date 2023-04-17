@@ -71,7 +71,9 @@ struct Matrix4
     /// application of the transformation to a point
     __device__ float3 transform( const float3& pt ) const;
     /// application of the transformation to a box
-    __device__ Box3 transform( const Box3& box ) const;    
+    __device__ Box3 transform( const Box3& box ) const;
+
+    __device__ Matrix4 inverse() const;
 };
 
 // calls mesh projection kernel for each point in parallel

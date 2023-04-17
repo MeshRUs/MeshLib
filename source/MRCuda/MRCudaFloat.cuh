@@ -63,6 +63,13 @@ __device__ inline float dot( const float3& a, const float3& b )
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+__device__ inline float3 cross( const float3& a, const float3& b )
+{
+    return { a.y* b.z - a.z * b.y,
+             a.z* b.x - a.x * b.z,
+             a.x* b.y - a.y * b.x };
+}
+
 
 }
 }
