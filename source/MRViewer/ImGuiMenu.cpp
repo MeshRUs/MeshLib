@@ -386,6 +386,19 @@ bool ImGuiMenu::onMouseScroll_(float delta_y)
     return false;
 }
 
+void ImGuiMenu::cursorEntrance_( [[maybe_unused]] bool entered )
+{
+#ifdef __EMSCRIPTEN__
+    if ( entered )
+        ImGui::GetIO().ConfigFlags &= (~ImGuiConfigFlags_NoMouse);
+    else
+    {
+        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        EM_ASM( postEmptyEvent( 100, 2 ) );
+    }
+#endif
+}
+
 // Keyboard IO
 bool ImGuiMenu::onCharPressed_( unsigned  key, int /*modifiers*/ )
 {

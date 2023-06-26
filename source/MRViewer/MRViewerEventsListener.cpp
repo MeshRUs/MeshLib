@@ -155,7 +155,14 @@ void PostFocusListener::connect( Viewer* viewer, int group, boost::signals2::con
 {
     if ( !viewer )
         return;
-    connection_ = viewer->postFocusSignal.connect( group, MAKE_SLOT( &PostFocusListener::postFocusSignal_ ), pos );
+    connection_ = viewer->postFocusSignal.connect( group, MAKE_SLOT( &PostFocusListener::postFocus_ ), pos );
+}
+
+void CursorEntranceListener::connect( Viewer* viewer, int group, boost::signals2::connect_position pos )
+{
+    if ( !viewer )
+        return;
+    connection_ = viewer->cursorEntranceSignal.connect( group, MAKE_SLOT( &CursorEntranceListener::cursorEntrance_ ), pos );
 }
 
 }

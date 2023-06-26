@@ -243,7 +243,17 @@ struct MRVIEWER_CLASS PostFocusListener : ConnectionHolder
     virtual ~PostFocusListener() = default;
     MRVIEWER_API virtual void connect( Viewer* viewer, int group, boost::signals2::connect_position pos ) override;
 protected:
-    virtual void postFocusSignal_( bool focused ) = 0;
+    virtual void postFocus_( bool focused ) = 0;
+};
+
+/// class to subscribe on CursorEntranceSingal
+struct MRVIEWER_CLASS CursorEntranceListener : ConnectionHolder
+{
+    MR_ADD_CTOR_DELETE_MOVE( CursorEntranceListener );
+    virtual ~CursorEntranceListener() = default;
+    MRVIEWER_API virtual void connect( Viewer* viewer, int group, boost::signals2::connect_position pos ) override;
+protected:
+    virtual void cursorEntrance_( bool enter ) = 0;
 };
 
 }

@@ -27,7 +27,7 @@ class MeshModifier;
 
 class MRVIEWER_CLASS ImGuiMenu : public MR::ViewerPlugin, 
     public MultiListener<
-    MouseDownListener, MouseMoveListener, MouseUpListener, MouseScrollListener,
+    MouseDownListener, MouseMoveListener, MouseUpListener, MouseScrollListener, CursorEntranceListener,
     CharPressedListener, KeyDownListener, KeyUpListener, KeyRepeatListener,
     SpaceMouseMoveListener, SpaceMouseDownListener,
     PreDrawListener, PostDrawListener,
@@ -279,6 +279,7 @@ protected:
     MRVIEWER_API virtual bool onMouseUp_( Viewer::MouseButton button, int modifier ) override;
     MRVIEWER_API virtual bool onMouseMove_( int mouse_x, int mouse_y ) override;
     MRVIEWER_API virtual bool onMouseScroll_( float delta_y ) override;
+    MRVIEWER_API virtual void cursorEntrance_( bool entered ) override;
     // Keyboard IO
     MRVIEWER_API virtual bool onCharPressed_( unsigned key, int modifiers ) override;
     MRVIEWER_API virtual bool onKeyDown_( int key, int modifiers ) override;

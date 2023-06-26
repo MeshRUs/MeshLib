@@ -233,7 +233,7 @@ void SpaceMouseHandlerWindows::activateMouseScrollZoom( bool activeMouseScrollZo
     getViewerInstance().mouseController.setMouseScroll( joystickIndex_ == -1 || activeMouseScrollZoom_ );
 }
 
-void SpaceMouseHandlerWindows::postFocusSignal_( bool focused )
+void SpaceMouseHandlerWindows::postFocus_( bool focused )
 {
     active_ = focused;
 }

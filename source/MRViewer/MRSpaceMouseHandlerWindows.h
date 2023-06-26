@@ -39,7 +39,7 @@ private:
     //hotfix TODO rework
     bool isUniversalReceiver_{ false };
 
-    virtual void postFocusSignal_( bool focused ) override;
+    virtual void postFocus_( bool focused ) override;
 
     void updateConnected_();
     void startUpdateThread_();
