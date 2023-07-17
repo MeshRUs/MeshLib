@@ -98,7 +98,21 @@ void PointsToMeshProjector::findProjections(
     meshData_->cudaPoints.fromVector( points );
     meshData_->cudaResult.resize( size );
 
-    meshProjectionKernel( meshData_->cudaPoints.data(), meshData_->cudaNodes.data(), meshData_->cudaMeshPoints.data(), meshData_->cudaFaces.data(), meshData_->cudaResult.data(), meshData_->xf, meshData_->refXf, upDistLimitSq, loDistLimitSq, size );
+   std::ofstream f( "c:/temp/cudaproj.txt" );
+   f << "threads,time" << std::endl;
+   for ( int i = 4; i <= 1024; i += 4 )
+   {
+       Timer t( "kernel" );
+        meshProjectionKernel( i, meshData_->cudaPoints.data(), meshData_->cudaNodes.data(), meshData_->cudaMeshPoints.data(), meshData_->cudaFaces.data(), meshData_->cudaResult.data(), meshData_->xf, meshData_->refXf, upDistLimitSq, loDistLimitSq, size );
+       f << i << ',';
+       if ( cudaDeviceSynchronize() )
+           f << "error";
+        else
+           f << t.secondsPassed().count();
+       f << std::endl;
+       std::this_thread::sleep_for( std::chrono::duration<float>( 5 ) );
+   }
+
     meshData_->cudaResult.toVector( res );
 
     tbb::parallel_for( tbb::blocked_range<size_t>( 0, res.size() ), [&] ( const tbb::blocked_range<size_t>& range )

@@ -5,7 +5,7 @@
 namespace MR { namespace Cuda {
 
 __global__ void kernel( const float3* points,
-    const Node3* nodes, const float3* meshPoints, const FaceToThreeVerts* faces,
+    const Node3* __restrict__ nodes, const float3* __restrict__ meshPoints, const FaceToThreeVerts* __restrict__ faces,
     MeshProjectionResult* resVec, const Matrix4 xf, const Matrix4 refXf, float upDistLimitSq, float loDistLimitSq, size_t size )
 {
     if ( size == 0 )
@@ -103,12 +103,10 @@ __global__ void kernel( const float3* points,
     resVec[index] = res;
 }
 
-void meshProjectionKernel( const float3* points, 
+void meshProjectionKernel( int maxThreadsPerBlock, const float3* points, 
                            const Node3* nodes, const float3* meshPoints, const FaceToThreeVerts* faces,
                            MeshProjectionResult* resVec, const Matrix4 xf, const Matrix4 refXf, float upDistLimitSq, float loDistLimitSq, size_t size )
 {
-    int maxThreadsPerBlock = 0;
-    CUDA_EXEC( cudaDeviceGetAttribute( &maxThreadsPerBlock, cudaDevAttrMaxThreadsPerBlock, 0 ) );
     int numBlocks = ( int( size ) + maxThreadsPerBlock - 1 ) / maxThreadsPerBlock;
     kernel << <numBlocks, maxThreadsPerBlock >> > ( points, nodes, meshPoints, faces, resVec, xf, refXf, upDistLimitSq, loDistLimitSq, size );
 }
