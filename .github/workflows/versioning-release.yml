@@ -49,7 +49,7 @@ jobs:
 
       - name: Versioning
         if: ${{ inputs.UPLOAD_ARTIFACTS }}
-        uses: paulhatch/semantic-version@v5.1.0
+        uses: paulhatch/semantic-version@v5.2.0
         id: version
         with:
           tag_prefix: "v"

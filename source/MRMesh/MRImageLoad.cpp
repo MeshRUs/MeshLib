@@ -45,22 +45,26 @@ const IOFilters Filters =
 #ifndef MRMESH_NO_PNG
 struct ReadPng
 {
-    ReadPng( const std::filesystem::path& file )
+    ReadPng( std::istream& in )
     {
-        fp = fopen( file, "rb" );
-        if ( !fp )
-            return;
         pngPtr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
         if ( !pngPtr )
             return;
         infoPtr = png_create_info_struct( pngPtr );
+
+        png_set_read_fn( pngPtr, ( png_voidp )&in, userReadData );
     }
+
     ~ReadPng()
     {
-        if ( fp )
-            fclose( fp );
         if ( pngPtr )
             png_destroy_read_struct( &pngPtr, &infoPtr, NULL );
+    }
+
+    static void userReadData( png_structp pngPtr, png_bytep data, png_size_t length )
+    {
+        png_voidp a = png_get_io_ptr( pngPtr );
+        ( ( std::istream* )a )->read( ( char* )data, length );
     }
 
     png_structp pngPtr{ nullptr };
@@ -69,25 +73,28 @@ struct ReadPng
     int paletteSize{ 0 };
     png_bytep alphaPalette{ nullptr };
     int alphaPaletteSize{ 0 };
-    FILE* fp{ nullptr };
 };
 
-Expected<Image, std::string> fromPng( const std::filesystem::path& file )
+Expected<Image, std::string> fromPng( const std::filesystem::path& path )
 {
-    ReadPng png( file );
+    std::ifstream in( path, std::ios::binary );
+    if ( !in )
+        return unexpected( "Cannot open file " + utf8string( path ) );
 
-    if ( !png.fp )
-        return unexpected( std::string( "Cannot open file for reading " ) + utf8string( file ) );
+    return addFileNameInError( fromPng( in ), path );
+}
+
+Expected<MR::Image, std::string> fromPng( std::istream& in )
+{
+    ReadPng png( in );
 
     if ( !png.pngPtr )
-        return unexpected( std::string( "Cannot read png " ) + utf8string( file ) );
+        return unexpected( std::string( "Cannot read png" ) );
 
     if ( !png.infoPtr )
-        return unexpected( std::string( "Cannot create png info" ) + utf8string( file ) );
+        return unexpected( std::string( "Cannot create png info" ) );
 
     Image result;
-
-    png_init_io( png.pngPtr, png.fp );
 
     unsigned w{ 0 }, h{ 0 };
     int depth{ 0 }; // 8
@@ -106,7 +113,7 @@ Expected<Image, std::string> fromPng( const std::filesystem::path& file )
       &interlace,
       &compression,
       &filter
-    );  
+    );
 
     result.resolution = Vector2i{ int( w ),int( h ) };
     result.pixels.resize( result.resolution.x * result.resolution.y );
@@ -143,13 +150,13 @@ Expected<Image, std::string> fromPng( const std::filesystem::path& file )
         std::vector<unsigned char> rawPixels( result.resolution.x * result.resolution.y );
         for ( int i = 0; i < result.resolution.y; ++i )
             ptrs[result.resolution.y - i - 1] = ( unsigned char* )( rawPixels.data() + result.resolution.x * i );
-        
+
         png_read_image( png.pngPtr, ptrs.data() );
         for ( int i = 0; i < result.resolution.y; ++i )
-        for ( int j = 0; j < result.resolution.x; ++j )
-        {
-            result.pixels[i * result.resolution.x + j] = palette[rawPixels[i * result.resolution.x + j]];
-        }
+            for ( int j = 0; j < result.resolution.x; ++j )
+            {
+                result.pixels[i * result.resolution.x + j] = palette[rawPixels[i * result.resolution.x + j]];
+            }
     }
     else
         return unexpected( "Unsupported png color type" );
@@ -157,6 +164,7 @@ Expected<Image, std::string> fromPng( const std::filesystem::path& file )
     png_read_end( png.pngPtr, NULL );
     return result;
 }
+
 #endif
 
 #ifndef __EMSCRIPTEN__
@@ -182,31 +190,40 @@ Expected<Image, std::string> fromJpeg( const std::filesystem::path& path )
     if ( !in )
         return unexpected( "Cannot open file " + utf8string( path ) );
 
+    return addFileNameInError( fromJpeg( in ), path );
+}
+
+Expected<MR::Image, std::string> fromJpeg( std::istream& in )
+{
     std::error_code ec;
-    const auto fileSize = std::filesystem::file_size( path, ec );
+    in.seekg( 0, std::ios::end );
+    size_t fileSize = in.tellg();
+    in.seekg( 0 );
+
     Buffer<char> buffer( fileSize );
-    in.read( buffer.data(), (ptrdiff_t)buffer.size() );
+    in.read( buffer.data(), ( ptrdiff_t )buffer.size() );
     if ( !in )
-        return unexpected( "Cannot read file " + utf8string( path ) );
+        return unexpected( "Cannot read file" );
 
     JpegReader reader;
     if ( !reader.tjInstance )
         return unexpected( "Cannot initialize JPEG decompressor" );
 
     int width, height, jpegSubsamp, jpegColorspace;
-    auto res = tjDecompressHeader3( reader.tjInstance, (const unsigned char*)buffer.data(), (unsigned long)buffer.size(), &width, &height, &jpegSubsamp, &jpegColorspace );
+    auto res = tjDecompressHeader3( reader.tjInstance, ( const unsigned char* )buffer.data(), ( unsigned long )buffer.size(), &width, &height, &jpegSubsamp, &jpegColorspace );
     if ( res != 0 )
         return unexpected( "Failed to decompress JPEG header" );
 
     Image image;
     image.pixels.resize( width * height );
     image.resolution = { width, height };
-    res = tjDecompress2( reader.tjInstance, (const unsigned char*)buffer.data(), (unsigned long)buffer.size(), reinterpret_cast<unsigned char*>( image.pixels.data() ), width, 0, height, TJPF_RGBA, TJFLAG_BOTTOMUP );
+    res = tjDecompress2( reader.tjInstance, ( const unsigned char* )buffer.data(), ( unsigned long )buffer.size(), reinterpret_cast< unsigned char* >( image.pixels.data() ), width, 0, height, TJPF_RGBA, TJFLAG_BOTTOMUP );
     if ( res != 0 )
         return unexpected( "Failed to decompress JPEG file" );
 
     return image;
 }
+
 #endif
 
 #endif

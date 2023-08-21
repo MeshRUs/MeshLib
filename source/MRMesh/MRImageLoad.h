@@ -21,6 +21,7 @@ MRMESH_API extern const IOFilters Filters;
 #ifndef MRMESH_NO_PNG
 /// loads from .png format
 MRMESH_API Expected<Image, std::string> fromPng( const std::filesystem::path& path );
+MRMESH_API Expected<Image, std::string> fromPng( std::istream& in );
 #endif
 
 #ifndef __EMSCRIPTEN__
@@ -28,6 +29,7 @@ MRMESH_API Expected<Image, std::string> fromPng( const std::filesystem::path& pa
 #ifndef MRMESH_NO_JPEG
 /// loads from .jpg format
 MRMESH_API Expected<Image, std::string> fromJpeg( const std::filesystem::path& path );
+MRMESH_API Expected<Image, std::string> fromJpeg( std::istream& in );
 #endif
 
 #endif
