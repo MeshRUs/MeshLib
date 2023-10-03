@@ -22,11 +22,14 @@
 #include "MRPolylineProject.h"
 #include "MRContoursCut.h"
 #include "MRFillContourByGraphCut.h"
+#include "MRMeshSave.h"
 
 #include "MRParallelFor.h"
 #include "MRPch/MRTBB.h"
 #include <sstream>
 #include <span>
+
+#include <fstream>
 
 namespace MR
 {
@@ -241,12 +244,35 @@ ExtractIsolinesResult extractAllIsolines( const Mesh& mesh, const ExtractIsoline
     {
         const auto meshContour = convertMeshTriPointsToClosedContour( mesh, *params.meshTriPoints );
 
+        std::ofstream fout( "C:\\Adalisk\\contour.csv" );
+
+        fout << "ID;x;y;z";
+        for ( auto& v : meshContour.intersections )
+        {
+            switch ( v.primitiveId.index() )
+            {
+            case 0:
+                fout << std::endl << "Vertex Id = " << std::get<0>(v.primitiveId) << "; " << v.coordinate.x << "; " << v.coordinate.y << "; " << v.coordinate.z;
+                break;
+            case 1:
+                fout << std::endl << "Edge Id = " << std::get<1>( v.primitiveId ) << "; " << v.coordinate.x << "; " << v.coordinate.y << "; " << v.coordinate.z;
+                break;
+            case 2:
+                fout << std::endl << "Face Id = " << std::get<2>( v.primitiveId ) << "; " << v.coordinate.x << "; " << v.coordinate.y << "; " << v.coordinate.z;
+                break;
+            }
+        }
+
+        fout.close();
+
         CutMeshParameters cutMeshParams;
         cutMeshParams.forceFillMode_ = CutMeshParameters::ForceFill::All;
         FaceMap new2OldMap;
         cutMeshParams.new2OldMap = &new2OldMap;
         res.old2NewMap.resize( res.meshAfterCut.topology.faceSize() );
+        MeshSave::toMrmesh( res.meshAfterCut, "C:\\Adalisk\\before.mrmesh" );
         const auto cutRes = cutMesh( res.meshAfterCut, { meshContour }, cutMeshParams);
+        MeshSave::toMrmesh( res.meshAfterCut, "C:\\Adalisk\\after.mrmesh" );
 
         for ( FaceId f = FaceId( 0 ); f < new2OldMap.size(); ++f )
         {
@@ -1207,9 +1233,17 @@ Expected<ToolPathResult, std::string> constantCuspToolPath( const MeshPart& mp, 
                 }
             } );
 
-            auto loops = findLeftBoundary( mp.mesh.topology, filteredSelection );
-            if ( !loops.empty() )
-                edgeLoops.push_back( loops.front() );
+            const auto filteredComponents = MeshComponents::getAllComponents( { mp.mesh, &filteredSelection } );
+            for ( const auto& filteredComponent : filteredComponents )
+            {
+                auto area = mp.mesh.area( filteredComponent );
+                if ( area < 1 )
+                    continue;
+
+                auto loops = findLeftBoundary( mp.mesh.topology, filteredComponent );
+                if ( !loops.empty() )
+                    edgeLoops.push_back( loops.front() );
+            }            
         }
     }
 
