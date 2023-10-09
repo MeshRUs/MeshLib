@@ -70,6 +70,11 @@ struct ConstantCuspParams : ToolPathParams
     bool fromCenterToBoundary = true;
 };
 
+struct FlatLandsParams : ConstantCuspParams
+{
+    float zTolerance = {};
+};
+
 struct LineInterpolationParams
 {
     // maximal deviation from given line
@@ -146,6 +151,8 @@ MRMESH_API Expected<ToolPathResult, std::string> lacingToolPath( const MeshPart&
 // if neither is specified, the lowest section by XY plane will be used as a start contour
 // mesh can be transformed using xf parameter
 MRMESH_API Expected<ToolPathResult, std::string> constantCuspToolPath( const MeshPart& mp, const ConstantCuspParams& params );
+
+MRMESH_API Expected<ToolPathResult, std::string> flatLandsToolPath( const MeshPart& mp, const FlatLandsParams& params );
 
 // generates G-Code for milling tool
 MRMESH_API std::shared_ptr<ObjectGcode> exportToolPathToGCode( const std::vector<GCommand>& commands );

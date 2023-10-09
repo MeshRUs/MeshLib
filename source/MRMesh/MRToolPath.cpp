@@ -22,11 +22,12 @@
 #include "MRPolylineProject.h"
 #include "MRContoursCut.h"
 #include "MRFillContourByGraphCut.h"
-
+#include "MRRingIterator.h"
 #include "MRParallelFor.h"
 #include "MRPch/MRTBB.h"
 #include <sstream>
 #include <span>
+#include <chrono>
 
 namespace MR
 {
@@ -1267,6 +1268,9 @@ Expected<ToolPathResult, std::string> constantCuspToolPath( const MeshPart& mp, 
         
         if ( contourBeforeProjecton )
             contourBeforeProjecton->push_back( contourBeforeProjecton->front() );
+
+        if ( contourBeforeCutMesh )
+            contourBeforeCutMesh->push_back( contourBeforeCutMesh->front() );
         
         if ( !processZone( nullptr, &meshTriPoints,
             res.commands.empty() ? Vector3f{} : Vector3f{ res.commands.back().x, res.commands.back().y, res.commands.back().z },
@@ -1275,6 +1279,33 @@ Expected<ToolPathResult, std::string> constantCuspToolPath( const MeshPart& mp, 
             return unexpectedOperationCanceled();
         }
     }
+
+    return res;
+}
+
+Expected<ToolPathResult, std::string> flatLandsToolPath( const MeshPart& mp, const FlatLandsParams& params )
+{
+    ToolPathResult res;
+    res.modifiedMesh = mp.mesh;
+
+    auto comps = MeshComponents::getAllFlatComponents( mp, params.zTolerance );
+
+    const auto count0 = comps[0].count();
+    const auto count1 = comps[1].count();
+
+    std::sort(comps.begin(), comps.end(), [] (const auto& a, const auto& b)
+    {
+        return a.count() > b.count();
+    } );
+
+    const auto lastIt = std::find_if( comps.begin(), comps.end(), [] ( const auto& comp )
+    {
+        return comp.count() == 1;
+    } );
+
+    comps.erase( lastIt, comps.end() );
+
+    res.modifiedRegion = comps[0];
 
     return res;
 }
