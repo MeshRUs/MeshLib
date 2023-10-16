@@ -24,6 +24,7 @@
 #include "MRFillContourByGraphCut.h"
 #include "MRInnerShell.h"
 #include "MRRingIterator.h"
+#include "MREdgePaths.h"
 
 #include "MRParallelFor.h"
 #include "MRPch/MRTBB.h"
@@ -208,10 +209,13 @@ struct ExtractIsolinesResult
 
 struct ExtractIsolinesParams
 {
+    const FaceBitSet* region;
     // if is not null, isolines will be based on this surface path
     const std::vector<SurfacePath>& startSurfacePaths;
     // if is not null, coordinates of the start contours will be stored here
     Contours3f* startContours;
+    // if is not null, coordinates of the start contours will be stored here
+    Contours3f* contoursBeforeCutMesh;
     // if is not null, coordinates of the contours failed to build isolines will be stored here
     Contours3f* failedContours;
     // if is not null, coordinates of the start vertices will be stored here
@@ -231,7 +235,8 @@ ExtractIsolinesResult extractAllIsolines( const Mesh& mesh, const ExtractIsoline
     ExtractIsolinesResult res;
     MR::VertScalars distances;
     // if startContours is provided add a new contour
-    Contour3f* startContour = nullptr;    
+    Contour3f* startContour = nullptr;
+    Contour3f* contourBeforeCutMesh = nullptr;
     
 
     res.meshAfterCut = mesh;
@@ -244,6 +249,12 @@ ExtractIsolinesResult extractAllIsolines( const Mesh& mesh, const ExtractIsoline
         {
             params.startContours->emplace_back();
             startContour = &params.startContours->back();
+        }
+
+        if ( params.contoursBeforeCutMesh )
+        {
+            params.contoursBeforeCutMesh->emplace_back();
+            contourBeforeCutMesh = &params.contoursBeforeCutMesh->back();
         }
 
         Polyline3 startPolyline;
@@ -275,10 +286,59 @@ ExtractIsolinesResult extractAllIsolines( const Mesh& mesh, const ExtractIsoline
                 startContour->push_back( res.meshAfterCut.edgePoint( ep ) );
         }
 
+        distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists, FLT_MAX );
+        BitSetParallelFor( getInnerVerts( res.meshAfterCut.topology, params.region ), [&] ( VertId v )
+        {
+            distances[v] = -distances[v];
+        } );
+
+        const auto shiftedIsoline = extractIsolines( res.meshAfterCut.topology, distances, params.sectionStep ).front();
+        
+        distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists );
+
+        startPolyline = Polyline3{};
+        startPolyline.addFromSurfacePath( res.meshAfterCut, shiftedIsoline );
+        startVerticesWithDists.clear();
+
+        for ( const auto& ep : shiftedIsoline )
+        {
+            const auto orgVertId = res.meshAfterCut.topology.org( ep.e );
+            const auto dstVertId = res.meshAfterCut.topology.dest( ep.e );
+            if ( !orgVertId.valid() || !dstVertId.valid() )
+                continue;
+
+            auto proj = findProjectionOnPolyline( res.meshAfterCut.points[orgVertId], startPolyline );
+            float dist = sqrt( proj.distSq );
+            startVerticesWithDists.insert_or_assign( orgVertId, dist );
+          
+
+            proj = findProjectionOnPolyline( res.meshAfterCut.points[dstVertId], startPolyline );
+            dist = sqrt( proj.distSq );
+            startVerticesWithDists.insert_or_assign( dstVertId, dist );
+        }
+
+       
+        auto offsetDistances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists, FLT_MAX );
+
+        if ( params.region )
+        {
+            auto offsetRegion = *params.region;
+            dilateRegion( res.meshAfterCut, offsetRegion, params.sectionStep );
+
+            BitSetParallelFor( getInnerVerts( res.meshAfterCut.topology, params.region ), [&] ( VertId v )
+            {
+                offsetDistances[v] = -offsetDistances[v];
+            } );
+        }        
+
+        auto smoothedPath = extractIsolines( res.meshAfterCut.topology, offsetDistances, -params.sectionStep ).front();
+
+        if ( contourBeforeCutMesh )
+        for ( const auto& ep : smoothedPath )
+        {           
+            contourBeforeCutMesh->push_back( res.meshAfterCut.edgePoint( ep ) );
+        }
     }
-    distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists );
-
-
 
     const float topExcluded = FLT_MAX;
     const auto [min, max] = parallelMinMax( distances.vec_, &topExcluded );
@@ -922,8 +982,10 @@ Expected<ToolPathResult, std::string> constantCuspToolPath( const MeshPart& mp, 
     {
         ExtractIsolinesParams extractionParams
         {
+            .region = mp.region,
             .startSurfacePaths = startSurfacePaths,
             .startContours = params.startContours,
+            .contoursBeforeCutMesh = params.contoursBeforeCutMesh,
             .failedContours = params.failedContours,
             .startVertices = params.startVertices,
             .sectionStep = params.sectionStep,
