@@ -286,15 +286,17 @@ ExtractIsolinesResult extractAllIsolines( const Mesh& mesh, const ExtractIsoline
                 startContour->push_back( res.meshAfterCut.edgePoint( ep ) );
         }
 
-        distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists, FLT_MAX );
+        distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists );
+        auto distancesCopy = distances;
+
         BitSetParallelFor( getInnerVerts( res.meshAfterCut.topology, params.region ), [&] ( VertId v )
         {
-            distances[v] = -distances[v];
+            distancesCopy[v] = -distancesCopy[v];
         } );
 
-        const auto shiftedIsoline = extractIsolines( res.meshAfterCut.topology, distances, params.sectionStep ).front();
+        const auto shiftedIsoline = extractIsolines( res.meshAfterCut.topology, distancesCopy, params.sectionStep ).front();
         
-        distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists );
+        //distances = computeSurfaceDistances( res.meshAfterCut, startVerticesWithDists );
 
         startPolyline = Polyline3{};
         startPolyline.addFromSurfacePath( res.meshAfterCut, shiftedIsoline );
