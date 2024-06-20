@@ -1275,6 +1275,7 @@
     <ClInclude Include="MRAABBTreeMaker.hpp">
       <Filter>Source Files\AABBTree</Filter>
     </ClInclude>
+    <ClInclude Include="MRSparseMatrixSolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MRObject.cpp">
@@ -2123,6 +2124,7 @@
     <ClCompile Include="MRAABBTreeObjects.cpp">
       <Filter>Source Files\AABBTree</Filter>
     </ClCompile>
+    <ClCompile Include="MRSparseMatrixSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />

@@ -3,6 +3,7 @@
 #include "MRBitSet.h"
 #include "MRVector.h"
 #include "MRVector3.h"
+#include "MRSparseMatrixSolver.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4068) // unknown pragmas
@@ -68,6 +69,8 @@ public:
     // return fixed vertices from the first layer around free vertices
     VertBitSet firstLayerFixedVerts() const { assert( solverValid_ ); return firstLayerFixedVerts_; }
 
+    // set sparse matrix solver
+    void setSMSolver( std::shared_ptr<SparseMatrixSolver> solver ) { solver_ = solver; }
 private:
     // updates solver_ only
     void updateSolver_();
@@ -110,22 +113,14 @@ private:
     Vector< int, VertId > regionVert2id_;
     Vector< int, VertId > freeVert2id_;
 
-    using SparseMatrix = Eigen::SparseMatrix<double,Eigen::RowMajor>;
+    using SparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+    using SparseMatrixColMajor = Eigen::SparseMatrix<double, Eigen::ColMajor>;
     SparseMatrix M_;
 
     // if true then we do not need to recompute solver_ in the apply
     bool solverValid_ = false;
-    using SparseMatrixColMajor = Eigen::SparseMatrix<double,Eigen::ColMajor>;
 
-    // interface needed to hide implementation headers
-    class Solver
-    {
-    public:
-        virtual ~Solver() = default;
-        virtual void compute( const SparseMatrixColMajor& A ) = 0;
-        virtual Eigen::VectorXd solve( const Eigen::VectorXd& rhs ) = 0;
-    };
-    std::unique_ptr<Solver> solver_;
+    std::shared_ptr<SparseMatrixSolver> solver_;
 
     // if true then we do not need to recompute rhs_ in the apply
     bool rhsValid_ = false;

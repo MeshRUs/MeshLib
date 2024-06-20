@@ -48,6 +48,9 @@
     <ClCompile Include="MRCudaMeshDistanceMap.cpp">
       <Filter>DistanceMaps</Filter>
     </ClCompile>
+    <ClCompile Include="MRCudaSMSolver.cpp">
+      <Filter>SparseMatrixSolver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exports.h" />
@@ -108,6 +111,9 @@
     <ClInclude Include="MRCudaMeshDistanceMap.cuh">
       <Filter>DistanceMaps</Filter>
     </ClInclude>
+    <ClInclude Include="MRCudaSMSolver.h">
+      <Filter>SparseMatrixSolver</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="CudaTest">
@@ -130,6 +136,9 @@
     </Filter>
     <Filter Include="DistanceMaps">
       <UniqueIdentifier>{74b4c63d-a992-4970-ae29-086c0bcb732c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SparseMatrixSolver">
+      <UniqueIdentifier>{ac7548a6-65c3-4194-a3eb-49c43569bce9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

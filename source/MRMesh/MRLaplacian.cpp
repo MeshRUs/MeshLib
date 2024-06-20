@@ -7,7 +7,6 @@
 #include "MRMeshComponents.h"
 #include "MRGTest.h"
 #include "MRPch/MRTBB.h"
-#include <Eigen/SparseCholesky>
 
 namespace MR
 {
@@ -17,23 +16,9 @@ void Laplacian::init( const VertBitSet & freeVerts, EdgeWeights weights, Remembe
     MR_TIMER;
     assert( !MeshComponents::hasFullySelectedComponent( mesh_, freeVerts ) );
 
-    class SimplicialLDLTSolver final : public Solver
-    {
-    public:
-        virtual void compute( const SparseMatrixColMajor& A ) final
-        {
-            solver_.compute( A );
-        }
+    if ( !solver_ )
+        solver_ = std::make_shared<SimplicialLDLTSolver>();
 
-        virtual Eigen::VectorXd solve( const Eigen::VectorXd& rhs ) final
-        {
-            return solver_.solve( rhs );
-        }
-    private:
-        Eigen::SimplicialLDLT<SparseMatrixColMajor> solver_;
-    };
-
-    solver_ = std::make_unique<SimplicialLDLTSolver>();
     solverValid_ = false;
 
     freeVerts_ = freeVerts;
@@ -253,7 +238,7 @@ void Laplacian::apply()
     updateSolver();
 
     Eigen::VectorXd sol[3];
-    tbb::parallel_for( tbb::blocked_range<int>( 0, 3, 1 ), [&]( const tbb::blocked_range<int> & range )
+    tbb::parallel_for( tbb::blocked_range<int>( 0, 3, 1 ), [&] ( const tbb::blocked_range<int>& range )
     {
         for ( int i = range.begin(); i < range.end(); ++i )
             sol[i] = solver_->solve( rhs_[i] );

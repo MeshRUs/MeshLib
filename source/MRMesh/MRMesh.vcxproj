@@ -209,6 +209,7 @@
     <ClInclude Include="MRSceneLoad.h" />
     <ClInclude Include="MRSeparationPoint.h" />
     <ClInclude Include="MRSolarRadiation.h" />
+    <ClInclude Include="MRSparseMatrixSolver.h" />
     <ClInclude Include="MRSphere.h" />
     <ClInclude Include="MRSymMatrix4.h" />
     <ClInclude Include="MRTiffIO.h" />
@@ -580,6 +581,7 @@
     <ClCompile Include="MRSceneLoad.cpp" />
     <ClCompile Include="MRSeparationPoint.cpp" />
     <ClCompile Include="MRSolarRadiation.cpp" />
+    <ClCompile Include="MRSparseMatrixSolver.cpp" />
     <ClCompile Include="MRTiffIO.cpp" />
     <ClCompile Include="MRRectIndexer.cpp" />
     <ClCompile Include="MRSceneColors.cpp" />
