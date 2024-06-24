@@ -38,9 +38,4 @@ private:
     Eigen::SimplicialLDLT<SparseMatrixColMajor> solver_;
 };
 
-// 1 rework Laplacian to use SparseMatrixSolver instead of Laplacian::Solver
-// 2 change parent class of CuSparseLDLTSolver (rename as CudaCholeskySolver)
-// 3 make wrapper TestSolverClass under Solver class
-
-
 }

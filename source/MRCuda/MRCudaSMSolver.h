@@ -16,7 +16,7 @@ typedef struct cusparseMatDescr* cusparseMatDescr_t;
 namespace MR::Cuda
 {
 
-class CuSparseLDLTSolver : public SparseMatrixSolver
+class CudaSparseMatrixSolver : public SparseMatrixSolver
 {
 public:
     using SparseMatrixColMajor = Eigen::SparseMatrix<double, Eigen::ColMajor>;
@@ -26,23 +26,17 @@ public:
     MRCUDA_API Eigen::VectorXd solve( const Eigen::VectorXd& rhs );
     MRCUDA_API bool isError() { return error_; }
 private:
-    void eigenSparseToCuSparse_( const SparseMatrixColMajor& mat, int*& row, int*& col, double*& val, int& num_non0, int& num_outer );
-    void eigenToCuSparse_( const Eigen::VectorXd& vec, double*& val, int& size );
-    void cuSparseTransposeToEigenSparse_( const int* row, const int* col, const double* val, const int num_non0,
-    const int mat_row, const int mat_col, Eigen::SparseMatrix<double>& mat );
-    void cuSparseToEigen_( const double* val, const int size, Eigen::VectorXd& vec );
+    void sparseMatrixEigenToCuda_( const SparseMatrixColMajor& mat, int*& dRow, int*& dCol, double*& dVal, int& numNonZero );
+    void denseVectorEigenToCuda_( const Eigen::VectorXd& vec, double*& dVal );
+    void cudaTransposeToEigenSparse_( const int* row, const int* col, const double* val, const int num_non0,
+        const int mat_row, const int mat_col, Eigen::SparseMatrix<double>& mat );
+    void denseVectorCudaToEigen_( const double* dVal, const int size, Eigen::VectorXd& vec );
 
-    void compute2_( const SparseMatrixColMajor& A );
-    Eigen::VectorXd solve2_( const Eigen::VectorXd& rhs );
+    void compute_( const SparseMatrixColMajor& A );
+    Eigen::VectorXd solve_( const Eigen::VectorXd& rhs );
 
-    // version 1
-    cusparseHandle_t handle_ = NULL;
-    cusparseSpMatDescr_t matA_;
-    cusparseDnVecDescr_t vecX_;
-    cusparseDnVecDescr_t vecY_;
-
-    int A_num_rows = 0;
-    int A_num_cols = 0;
+    int matANumRows_ = 0;
+    int matANumCols_ = 0;
 
     // version 2
     cusolverSpHandle_t cusolverHandle_;
@@ -50,7 +44,7 @@ private:
     int* dRow_ = nullptr;
     int* dCol_ = nullptr;
     double* dVal_ = nullptr;
-    int num_non0_ = 0;
+    int numNonZero_ = 0;
 
     bool error_ = false;
 };

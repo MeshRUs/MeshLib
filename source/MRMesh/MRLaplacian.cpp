@@ -7,9 +7,11 @@
 #include "MRMeshComponents.h"
 #include "MRGTest.h"
 #include "MRPch/MRTBB.h"
+#include <chrono>
 
 namespace MR
 {
+using Time = std::chrono::high_resolution_clock;
 
 void Laplacian::init( const VertBitSet & freeVerts, EdgeWeights weights, RememberShape rem )
 {
@@ -155,7 +157,10 @@ void Laplacian::updateSolver_()
 
     SparseMatrix A = M_.adjoint() * M_;
 
+    auto startTimePoint = Time::now();
     solver_->compute( A );
+    std::chrono::duration<double> duration = Time::now() - startTimePoint;
+    std::cout << "compute = " << float(std::chrono::duration_cast< std::chrono::milliseconds >( duration ).count()) << "\n";
 }
 
 template <typename I, typename G, typename S>
@@ -238,11 +243,14 @@ void Laplacian::apply()
     updateSolver();
 
     Eigen::VectorXd sol[3];
+    auto startTimePoint = Time::now();
     tbb::parallel_for( tbb::blocked_range<int>( 0, 3, 1 ), [&] ( const tbb::blocked_range<int>& range )
     {
         for ( int i = range.begin(); i < range.end(); ++i )
             sol[i] = solver_->solve( rhs_[i] );
     } );
+    std::chrono::duration<double> duration = Time::now() - startTimePoint;
+    std::cout << "solve = " << float(std::chrono::duration_cast< std::chrono::milliseconds >( duration ).count()) << "\n";
 
     // copy solution back into mesh points
     for ( auto v : freeVerts_ )
