@@ -36,11 +36,8 @@
     <ClCompile Include="Basic\MRMoveObjectByMouse.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic\MRWasmUnavailablePlugin.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
     <ClCompile Include="Selectors\MRSelectObjectByClick.cpp">
-      <Filter>Selectors</Filter>
+     <Filter>Selectors</Filter>
     </ClCompile>
     <ClCompile Include="ViewerButtons\MRIOFilesMenuItems.cpp">
       <Filter>ViewerButtons</Filter>

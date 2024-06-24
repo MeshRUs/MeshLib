@@ -27,9 +27,11 @@
     <ClInclude Include="MRCylinderObject.h" />
     <ClInclude Include="MRDipole.h" />
     <ClInclude Include="MRDistanceVolumeParams.h" />
+    <ClInclude Include="MREnums.h" />
     <ClInclude Include="MRFaceDistance.h" />
     <ClInclude Include="MRFeatureObject.h" />
     <ClInclude Include="MRFeatures.h" />
+    <ClInclude Include="MRFillHoleNicely.h" />
     <ClInclude Include="MRFinally.h" />
     <ClInclude Include="MRFixSelfIntersections.h" />
     <ClInclude Include="MRInTreePathBuilder.h" />
@@ -41,6 +43,7 @@
     <ClInclude Include="MRFilterCreaseEdges.h" />
     <ClInclude Include="MRImproveSampling.h" />
     <ClInclude Include="MRIterativeSampling.h" />
+    <ClInclude Include="MRLevelOfDetails.h" />
     <ClInclude Include="MRLocalTriangulations.h" />
     <ClInclude Include="MRMapping.h" />
     <ClInclude Include="MRMeshLoadSettings.h" />
@@ -132,6 +135,8 @@
     <ClInclude Include="MRNormalDenoising.h" />
     <ClInclude Include="MRNormalsToPoints.h" />
     <ClInclude Include="MROffsetContours.h" />
+    <ClInclude Include="MRParabola.h" />
+    <ClInclude Include="MRBestFitParabola.h" />
     <ClInclude Include="MRPointCloudDivideWithPlane.h" />
     <ClInclude Include="MRPointOnObject.h" />
     <ClInclude Include="MROverlappingTris.h" />
@@ -325,6 +330,7 @@
     <ClInclude Include="MRViewportId.h" />
     <ClInclude Include="MRViewportProperty.h" />
     <ClInclude Include="MRVolumeIndexer.h" />
+    <ClInclude Include="MRVolumeInterpolation.h" />
     <ClInclude Include="MRVoxelGraphCut.h" />
     <ClInclude Include="MRVoxelPath.h" />
     <ClInclude Include="MRVisualObject.h" />
@@ -397,6 +403,9 @@
     <ClInclude Include="MRObjectDimensionsEnum.h" />
     <ClInclude Include="MRRenderModelParameters.h" />
     <ClInclude Include="MRVectorTraits.h" />
+    <ClInclude Include="MRFeatureObjectImpls.h" />
+    <ClInclude Include="MRFeatureRefine.h" />
+    <ClInclude Include="MRFeatureHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MR2DContoursTriangulation.cpp" />
@@ -415,6 +424,7 @@
     <ClCompile Include="MRAlphaShape.cpp" />
     <ClCompile Include="MRArrow.cpp" />
     <ClCompile Include="MRBasinVolume.cpp" />
+    <ClCompile Include="MRBestFitParabola.cpp" />
     <ClCompile Include="MRBestFitQuadric.cpp" />
     <ClCompile Include="MRBestFitTests.cpp" />
     <ClCompile Include="MRBooleanOperation.cpp" />
@@ -467,6 +477,7 @@
     <ClCompile Include="MRFillContour.cpp" />
     <ClCompile Include="MRFillContourByGraphCut.cpp" />
     <ClCompile Include="MRFillContours2D.cpp" />
+    <ClCompile Include="MRFillHoleNicely.cpp" />
     <ClCompile Include="MRFilterCreaseEdges.cpp" />
     <ClCompile Include="MRFinally.cpp" />
     <ClCompile Include="MRFixSelfIntersections.cpp" />
@@ -478,6 +489,7 @@
     <ClCompile Include="MRHistoryAction.cpp" />
     <ClCompile Include="MRImage.cpp" />
     <ClCompile Include="MRIterativeSampling.cpp" />
+    <ClCompile Include="MRLevelOfDetails.cpp" />
     <ClCompile Include="MRLocalTriangulations.cpp" />
     <ClCompile Include="MRLogWindowsExceptions.cpp" />
     <ClCompile Include="MRMapEdge.cpp" />
@@ -682,6 +694,8 @@
     <ClCompile Include="MRSubfeatures.cpp" />
     <ClCompile Include="MRMeasurementObject.cpp" />
     <ClCompile Include="MRObjectDimensionsEnum.cpp" />
+    <ClCompile Include="MRFeatureRefine.cpp" />
+    <ClCompile Include="MRFeatureHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="$(ProjectDir)..\..\thirdparty\python\python$(PythonVersion).zip">

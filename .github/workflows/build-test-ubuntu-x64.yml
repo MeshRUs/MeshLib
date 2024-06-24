@@ -1,4 +1,4 @@
-name: Build and test Ubuntu22
+name: Build and test Ubuntu x64
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
         required: false
         type: boolean
       autotest_data_s3_url:
-        default: "s3://data-autotest/test_data_2023-mar-07"
+        default: "s3://data-autotest/test_data_2023-jun-14"
         required: false
         type: string
       UPLOAD_ARTIFACTS:
@@ -22,36 +22,70 @@ on:
         type: boolean
 
 jobs:
-  ubuntu22-build-test:
+  ubuntu-x64-build-test:
     timeout-minutes: 40
     runs-on: [self-hosted, x64, docker-ready, build]
     container:
-      image: meshlib/meshlib-ubuntu22:${{inputs.docker_image_tag}}
+      image: meshlib/meshlib-${{matrix.os}}:${{inputs.docker_image_tag}}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
-        config: [ Debug, Release ]
-        compiler: [ Clang 14, GCC 12 ]
+        os:    [ ubuntu20, ubuntu22, ubuntu24 ]
+        config:   [ Debug, Release ]
+        compiler: [ Clang, GCC ]
         full_config_build:
           - ${{fromJSON(inputs.full_config_build)}}
         exclude:
-          # Do not run Debug Clang 14 build on every commit (but only once a day)
+          # Do not run Debug Clang build on every commit (but only once a day)
           - full_config_build: false
             config: Debug
-            compiler: Clang 14
-          # Do not run Release GCC 12 build on every commit (but only once a day)
+            compiler: Clang
+          # Do not run Release GCC build on every commit (but only once a day)
           - full_config_build: false
             config: Release
-            compiler: GCC 12
+            compiler: GCC
+          - os: ubuntu24
+            compiler: GCC
+          - os: ubuntu24
+            config: Debug
         include:
-          - compiler: Clang 14
+          - os: ubuntu20
+            compiler: Clang
+            cxx-compiler: /usr/bin/clang++-11
+            c-compiler: /usr/bin/clang-11
+            use-cpp-23: "OFF"
+            build_mrcuda: "ON"
+          - os: ubuntu20
+            compiler: GCC
+            cxx-compiler: /usr/bin/g++-10
+            c-compiler: /usr/bin/gcc-10
+            use-cpp-23: "OFF"
+            build_mrcuda: "ON"
+          - os: ubuntu22
+            compiler: Clang
             cxx-compiler: /usr/bin/clang++-14
             c-compiler: /usr/bin/clang-14
             use-cpp-23: "OFF"
-          - compiler: GCC 12
+            build_mrcuda: "ON"
+          - os: ubuntu22
+            compiler: GCC
             cxx-compiler: /usr/bin/g++-12
             c-compiler: /usr/bin/gcc-12
             use-cpp-23: "ON"
+            build_mrcuda: "ON"
+          - os: ubuntu24
+            compiler: Clang
+            cxx-compiler: /usr/bin/clang++-18
+            c-compiler: /usr/bin/clang-18
+            use-cpp-23: "OFF"
+            build_mrcuda: "OFF"
+          # - os: ubuntu24
+            # compiler: GCC
+            # cxx-compiler: /usr/bin/g++-13
+            # c-compiler: /usr/bin/gcc-13
+            # use-cpp-23: "ON"
+            # build_mrcuda: "OFF"
     permissions:
       id-token: write # This is required for requesting the JWT
       contents: read  # This is required for actions/checkout
@@ -71,6 +105,12 @@ jobs:
           ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
           ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
 
+      - name: Create virtualenv
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
       - name: Setup python requirements
         run: python3 -m pip install -r ./requirements/python.txt
 
@@ -80,13 +120,18 @@ jobs:
           MESHLIB_BUILD_RELEASE: ${{ fromJSON('["OFF", "ON"]')[matrix.config == 'Release'] }}
           MESHLIB_BUILD_DEBUG: ${{ fromJSON('["OFF", "ON"]')[matrix.config == 'Debug'] }}
           CMAKE_CXX_COMPILER: ${{ matrix.cxx-compiler }}
-          # not realy needed
-          CMAKE_C_COMPILER: ${{ matrix.c-compiler }}
           MR_VERSION: ${{ inputs.app_version }}
           MR_USE_CPP_23: ${{ matrix.use-cpp-23 }}
+          MESHLIB_BUILD_MRCUDA: ${{ matrix.build_mrcuda }}
+          # options to be passed to cmake
+          MR_CMAKE_OPTIONS: >
+                      -DMR_USE_CPP_23=${{ matrix.use-cpp-23 }}
+                      -DMESHLIB_BUILD_MRCUDA=${{ matrix.build_mrcuda }}
+          # not realy needed
+          CMAKE_C_COMPILER: ${{ matrix.c-compiler }}
 
       - name: Collect Timings
-        run: ./scripts/devops/collect_timing_logs.sh ubuntu22 ${{matrix.config}} "${{matrix.compiler}}"
+        run: ./scripts/devops/collect_timing_logs.sh ${{matrix.os}} ${{matrix.config}} "${{matrix.compiler}}"
 
       #Save timing in artifact
       - name: Upload Timings
@@ -106,7 +151,7 @@ jobs:
         run: python3 ./../../../scripts/run_python_test_script.py -d '../test_python'
 
       - name: Configure AWS Credentials
-        if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' && env.INTERNAL_BUILD == 'true' }}
+        if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' || env.INTERNAL_BUILD == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::259351611210:role/GitHubMeshLibAwsCredsRole
@@ -114,7 +159,7 @@ jobs:
 
       # cache managment: https://github.com/MeshInspector/MeshLib/actions/caches
       - name: Cache autotest data from S3 Tests
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository}}
+        if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' || env.INTERNAL_BUILD == 'true' }}
         id: cache-autotest
         uses: actions/cache@v4
         with:
@@ -122,33 +167,33 @@ jobs:
           key: ${{inputs.autotest_data_s3_url}}
 
       - name: Copy autotest data from S3 Tests
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository}}
+        if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' || env.INTERNAL_BUILD == 'true' }}
         run: aws s3 sync ${{inputs.autotest_data_s3_url}} ./test_data --delete --no-sign-request --size-only
 
       - name: Python Regression Tests
         env:
           SMOKE: ${{ env.INTERNAL_BUILD == 'true' && inputs.full_config_build == false && matrix.config == 'Debug' }}
-        if: ${{ env.INTERNAL_BUILD == 'true' }}
+        if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' || env.INTERNAL_BUILD == 'true' }}
         working-directory: ./build/${{ matrix.config }}/bin
         run: python3 ./../../../scripts/run_python_test_script.py -d '../test_regression' -s ${{env.SMOKE}}
 
       - name: Copy test artifacts to S3
         if: ${{ env.UPLOAD_TEST_ARTIFACTS == 'true' && env.INTERNAL_BUILD == 'true' && !cancelled() }}
-        run: aws s3 cp ./pytest_temp 's3://test-artifacts-git/tests/${{github.run_id}}/ubuntu22/${{matrix.config}}/${{matrix.compiler}}' --recursive
+        run: aws s3 cp ./pytest_temp 's3://test-artifacts-git/tests/${{github.run_id}}/${{matrix.os}}/${{matrix.config}}/${{matrix.compiler}}' --recursive
 
       - name: Create Deb
-        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.compiler == 'Clang 14' && matrix.config == 'Release'}}
+        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.compiler == 'Clang' && matrix.config == 'Release'}}
         env:
           MESHLIB_BUILD_RELEASE: ON
           MESHLIB_BUILD_DEBUG: OFF
         run: |
           ./scripts/distribution.sh ${{inputs.app_version}}
-          mv ./distr/meshlib-dev.deb meshlib-ubuntu22-dev.deb
+          mv ./distr/meshlib-dev.deb meshlib-${{matrix.os}}-dev.deb
 
       - name: Upload Ubuntu Developer Distribution
-        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.compiler == 'Clang 14' && matrix.config == 'Release'}}
+        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.compiler == 'Clang' && matrix.config == 'Release'}}
         uses: actions/upload-artifact@v4
         with:
-          name: Distributives_ubuntu22-x86
-          path: meshlib-ubuntu22-dev.deb
+          name: Distributives_${{matrix.os}}-x86
+          path: meshlib-${{matrix.os}}-dev.deb
           retention-days: 1

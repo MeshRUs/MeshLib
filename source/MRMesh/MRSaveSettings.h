@@ -23,6 +23,15 @@ struct SaveSettings
     /// optional per-vertex color to save with the geometry
     const VertColors * colors = nullptr;
 
+    /// optional per-vertex uv coordinate to save with the geometry
+    const VertUVCoords * uvMap = nullptr;
+
+    /// optional texture to save with the geometry
+    const MeshTexture * texture = nullptr;
+
+    /// used to save texture and material in some formats (obj)
+    std::string materialName = "Default";
+
     /// this transformation can optionally be applied to all vertices (points) of saved object
     const AffineXf3d * xf = nullptr;
 

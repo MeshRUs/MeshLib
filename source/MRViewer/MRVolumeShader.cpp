@@ -179,7 +179,7 @@ std::string getVolumeFragmentShader()
 
         {
             ivec2 texSize = textureSize( activeVoxels, 0 );
-            // TODO fix potential ovewflow
+            // TODO fix potential overflow
             uint voxelId = uint( textCoord.z * dims.z ) * dimsXY + uint( textCoord.y * dims.y ) * dimsX + uint( textCoord.x * dims.x );
             uint index = voxelId / 32u;
             uint block = texelFetch( activeVoxels, ivec2( index % uint( texSize.x ), index / uint( texSize.x ) ), 0 ).r;

@@ -4,7 +4,7 @@
 namespace MR
 {
 
-std::string getPickerFragmentShader( bool points )
+std::string getPickerFragmentShader( bool points, bool cornerMode )
 {
     const std::string head =
         MR_GLSL_VERSION_LINE R"(
@@ -22,8 +22,14 @@ std::string getPickerFragmentShader( bool points )
   out highp uvec4 color;
 )";
 
-    const std::string tail = R"(
+    const std::string primId =
+        cornerMode ? R"(
     uint primitiveId = ( uint(primitiveIdf1) << 20u ) + uint(primitiveIdf0);
+)" : R"(
+    uint primitiveId = uint(gl_PrimitiveID);
+)";
+
+    const std::string tail = R"(
     color.r = primitiveId;
 
     color.g = uniGeomId;
@@ -36,6 +42,7 @@ std::string getPickerFragmentShader( bool points )
         getShaderMainBeginBlock() +
         ( points ? getFragmentShaderPointSizeBlock() : R"()" ) +
         getFragmentShaderClippingBlock() +
+        primId +
         tail +
         getFragmentShaderEndBlock( false );
 }

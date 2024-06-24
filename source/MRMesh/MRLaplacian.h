@@ -3,6 +3,7 @@
 #include "MRBitSet.h"
 #include "MRVector.h"
 #include "MRVector3.h"
+#include "MREnums.h"
 #include "MRSparseMatrixSolver.h"
 
 #pragma warning(push)
@@ -31,14 +32,6 @@ namespace MR
 class Laplacian
 {
 public:
-    enum class EdgeWeights
-    {
-        Unit = 0,  // all edges have same weight=1
-        Cotan,     // edge weight depends on local geometry and uses cotangent values
-        CotanTimesLength, // [deprecated] edge weight is equal to edge length times cotangent weight
-        CotanWithAreaEqWeight // cotangent edge weights and equation weights inversely proportional to square root of local area
-    };
-
     enum class RememberShape
     {
         Yes,  // true Laplacian mode when initial mesh shape is remembered and copied in apply
@@ -71,6 +64,9 @@ public:
 
     // set sparse matrix solver
     void setSMSolver( std::shared_ptr<SparseMatrixSolver> solver ) { solver_ = solver; }
+
+    using EdgeWeights [[deprecated]] = MR::EdgeWeights;
+
 private:
     // updates solver_ only
     void updateSolver_();
@@ -113,7 +109,7 @@ private:
     Vector< int, VertId > regionVert2id_;
     Vector< int, VertId > freeVert2id_;
 
-    using SparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+    using SparseMatrix = Eigen::SparseMatrix<double,Eigen::RowMajor>;
     using SparseMatrixColMajor = Eigen::SparseMatrix<double, Eigen::ColMajor>;
     SparseMatrix M_;
 

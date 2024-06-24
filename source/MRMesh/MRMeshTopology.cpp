@@ -770,7 +770,7 @@ FaceId MeshTopology::lastValidFace() const
     return validFaces_.find_last();
 }
 
-void MeshTopology::deleteFace( FaceId f )
+void MeshTopology::deleteFace( FaceId f, const UndirectedEdgeBitSet * keepEdges )
 {
     EdgeId e = edgeWithLeft( f );
     assert( e.valid() );
@@ -784,14 +784,14 @@ void MeshTopology::deleteFace( FaceId f )
     const int d = getLeftDegree( e );
     for ( int i = 0; i < d; ++i )
     {
-        if ( !right( e ).valid() && prev( e ) == next( e ) )
+        if ( !right( e ).valid() && prev( e ) == next( e ) && !( keepEdges && keepEdges->test( e ) ) )
         {
             // only two edges from e.origin, so this vertex does not belong to any other face
             setOrg( e, VertId{} );
         }
         EdgeId e1 = e;
         e = prev( e.sym() );
-        if ( !left( e1.sym() ).valid() )
+        if ( !left( e1.sym() ).valid() && !( keepEdges && keepEdges->test( e1 ) ) )
         {
             // no face to the right of e1, delete it
             splice( prev( e1 ), e1 );
@@ -800,11 +800,11 @@ void MeshTopology::deleteFace( FaceId f )
     }
 }
 
-void MeshTopology::deleteFaces( const FaceBitSet& fs )
+void MeshTopology::deleteFaces( const FaceBitSet & fs, const UndirectedEdgeBitSet * keepEdges )
 {
     MR_TIMER
     for ( auto f : fs )
-        deleteFace( f );
+        deleteFace( f, keepEdges );
 }
 
 void MeshTopology::translateNoFlip_( HalfEdgeRecord & r, const FaceMap & fmap, const VertMap & vmap, const WholeEdgeMap & emap ) const
@@ -1845,6 +1845,9 @@ void MeshTopology::pack( FaceMap * outFmap, VertMap * outVmap, WholeEdgeMap * ou
     if ( rearrangeTriangles )
         rotateTriangles();
     MeshTopology packed;
+    packed.vertReserve( numValidVerts() );
+    packed.faceReserve( numValidFaces() );
+    packed.edgeReserve( 2 * computeNotLoneUndirectedEdges() );
     packed.addPart( *this, outFmap, outVmap, outEmap, rearrangeTriangles );
     *this = std::move( packed );
 }

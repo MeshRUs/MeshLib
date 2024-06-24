@@ -1142,7 +1142,6 @@ bool Viewer::loadFiles( const std::vector<std::filesystem::path>& filesList )
                 {
                     // for constructed scenes, add original file path to the recent files' list and set a new scene extension afterward
                     getViewerInstance().recentFilesStore().storeFile( filePath );
-                    filePath.replace_extension( ".mru" );
                     getViewerInstance().onSceneSaved( filePath, false );
                 }
             }
@@ -2474,10 +2473,7 @@ void Viewer::onSceneSaved( const std::filesystem::path& savePath, bool storeInRe
     if ( !savePath.empty() && storeInRecent )
         recentFilesStore().storeFile( savePath );
 
-    if ( !SceneFileFilters.empty() && savePath.extension() == SceneFileFilters.front().extensions.substr( 1 ) )
-        SceneRoot::setScenePath(savePath);
-    else
-        SceneRoot::setScenePath("");
+    SceneRoot::setScenePath( savePath );
 
     if ( globalHistoryStore_ )
         globalHistoryStore_->setSavedState();

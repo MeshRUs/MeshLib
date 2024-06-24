@@ -15,6 +15,7 @@ std::string getShaderName( MR::GLStaticHolder::ShaderType type )
     {
         "Mesh shader",
         "Picker shader",
+        "Mesh desktop picker shader",
         "Alpha-sort mesh shader",
 
         "Points shader",
@@ -142,7 +143,7 @@ void GLStaticHolder::createShader_( ShaderType type )
             vertexShader = getLinesJointPickerVertexShader();
         fragmentShader = getPickerFragmentShader( type == LinesJointPicker );
     }
-    else if ( type == Picker )
+    else if ( type == Picker || type == MeshDesktopPicker )
     {
         vertexShader =
             MR_GLSL_VERSION_LINE R"(
@@ -171,7 +172,7 @@ void GLStaticHolder::createShader_( ShaderType type )
   }
 )";
 
-        fragmentShader = getPickerFragmentShader( false );
+        fragmentShader = getPickerFragmentShader( false, type == Picker );
     }
     else if ( type == DrawPoints )
     {

@@ -45,7 +45,8 @@
       <BuildStlModules>false</BuildStlModules>
       <!-- /utf-8 to resolve https://github.com/MeshInspector/MeshLib/issues/2780 -->
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>MR_PROJECT_NAME="$(MeshLibProjectName)";IMGUI_USER_CONFIG="imgui/MRCustomImGuiConfig.h";NOMINMAX;_CRT_SECURE_NO_DEPRECATE;ImDrawIdx=unsigned;SPDLOG_COMPILED_LIB;SPDLOG_SHARED_LIB;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;IMGUI_ENABLE_FREETYPE;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR to avoid breaking changes in Visual Studio 2022 making binaries incompatible with older msvc.dlls -->
+      <PreprocessorDefinitions>MR_PROJECT_NAME="$(MeshLibProjectName)";IMGUI_USER_CONFIG="imgui/MRCustomImGuiConfig.h";NOMINMAX;_CRT_SECURE_NO_DEPRECATE;ImDrawIdx=unsigned;SPDLOG_COMPILED_LIB;SPDLOG_SHARED_LIB;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;IMGUI_ENABLE_FREETYPE;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MeshLibSourceDir);$(PythonIncludePath);$(MeshLibDir)thirdparty\parallel-hashmap\;$(MeshLibDir)thirdparty\pybind11\include\;$(VcpkgCurrentInstalledDir)\include\suitesparse\;$(MeshLibDir)thirdparty\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

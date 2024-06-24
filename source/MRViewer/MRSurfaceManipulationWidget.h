@@ -4,7 +4,7 @@
 #include "MRMesh/MRMeshFwd.h"
 #include "MRViewer.h"
 #include "MRMesh/MRChangeMeshAction.h"
-#include "MRMesh/MRLaplacian.h"
+#include "MRMesh/MREnums.h"
 #include "MRViewer/MRViewport.h"
 #include <chrono>
 
@@ -21,13 +21,17 @@ class MRVIEWER_CLASS SurfaceManipulationWidget :
                          PostDrawListener>
 {
 public:
+    MRVIEWER_API SurfaceManipulationWidget();
+    MRVIEWER_API ~SurfaceManipulationWidget();
+
     /// widget work modes
     enum class WorkMode
     {
         Add,
         Remove,
         Relax,
-        Laplacian
+        Laplacian,
+        Patch
     };
 
     /// Mesh change settings
@@ -39,7 +43,7 @@ public:
         float editForce = 1.f; // the force of changing mesh
         float sharpness = 50.f; // effect of force on points far from center editing area. [0 - 100]
         float relaxForceAfterEdit = 0.25f; //  force of relaxing modified area after editing (add / remove) is complete. [0 - 0.5], 0 - not relax
-        Laplacian::EdgeWeights edgeWeights = Laplacian::EdgeWeights::Cotan; // edge weights for laplacian smoothing
+        EdgeWeights edgeWeights = EdgeWeights::Cotan; // edge weights for Laplacian and Patch
     };
 
     /// initialize widget according ObjectMesh
@@ -83,14 +87,13 @@ private:
     std::shared_ptr<ObjectMesh> obj_;
     float diagonal_ = 1.f;
     float minRadius_ = 1.f;
-    Vector2f mousePos_;
-    VertBitSet singleEditingRegion_; // region of editing of one action (move)
-    VertBitSet visualizationRegion_;
-    VertBitSet generalEditingRegion_; // region of editing of all actions (one LMB holding)
+    Vector2f mousePos_; ///< mouse position of last updateRegion_
+    VertBitSet singleEditingRegion_;  ///< current (under the cursor) region of tool application
+    VertBitSet visualizationRegion_;  ///< vertices of triangles partially or fully highlighted with red
+    VertBitSet generalEditingRegion_; ///< united region of tool application since the last mouse down
     VertScalars pointsShift_;
     VertScalars editingDistanceMap_;
     VertScalars visualizationDistanceMap_;
-    VertUVCoords uvs_;
     std::shared_ptr<ObjectMesh> oldMesh_;
     bool firstInit_ = true; // need to save settings in re-initial
     bool badRegion_ = false; // in selected region less than 3 points

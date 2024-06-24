@@ -330,7 +330,7 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, SubdivideSettings, [] ( pybind11::module_& m
         def_readwrite( "maxEdgeLen", &SubdivideSettings::maxEdgeLen, "Maximal possible edge length created during decimation" ).
         def_readwrite( "maxEdgeSplits", &SubdivideSettings::maxEdgeSplits, "Maximum number of edge splits allowed" ).
         def_readwrite( "maxDeviationAfterFlip", &SubdivideSettings::maxDeviationAfterFlip, "Improves local mesh triangulation by doing edge flips if it does not make too big surface deviation" ).
-        def_readwrite( "maxAngleChangeAfterFlip", &SubdivideSettings::maxAngleChangeAfterFlip, "Improves local mesh triangulation by doing edge flips if it does change dihedral angle more than on this value. Unit: rad" ).
+        def_readwrite( "maxAngleChangeAfterFlip", &SubdivideSettings::maxAngleChangeAfterFlip, "Improves local mesh triangulation by doing edge flips if it does not change dihedral angle more than on this value. Unit: rad" ).
         def_readwrite( "criticalAspectRatioFlip", &SubdivideSettings::criticalAspectRatioFlip, "If this value is less than FLT_MAX then edge flips will ignore dihedral angle check if one of triangles has aspect ratio more than this value" ).
         def_readwrite( "region", &SubdivideSettings::region, "Region on mesh to be subdivided, it is updated during the operation" ).
         def_readwrite( "newVerts", &SubdivideSettings::newVerts, "New vertices appeared during subdivision will be added here" ).
@@ -380,23 +380,24 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, Overhangs, [] ( pybind11::module_& m )
 // Position Verts Smooth
 MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, LaplacianEdgeWeightsParam, [] ( pybind11::module_& m )
 {
-    pybind11::enum_<Laplacian::EdgeWeights>( m, "LaplacianEdgeWeightsParam" ).
-        value( "Unit", Laplacian::EdgeWeights::Unit, "all edges have same weight=1" ).
-        value( "Cotan", Laplacian::EdgeWeights::Cotan, "edge weight depends on local geometry and uses cotangent values" ).
-        value( "CotanTimesLength", Laplacian::EdgeWeights::CotanTimesLength, "[deprecated] edge weight is equal to edge length times cotangent weight" ).
-        value( "CotanWithAreaEqWeight", Laplacian::EdgeWeights::CotanWithAreaEqWeight, "cotangent edge weights and equation weights inversely proportional to square root of local area" );
+    pybind11::enum_<EdgeWeights>( m, "LaplacianEdgeWeightsParam" ).
+        value( "Unit", EdgeWeights::Unit, "all edges have same weight=1" ).
+        value( "Cotan", EdgeWeights::Cotan, "edge weight depends on local geometry and uses cotangent values" ).
+        value( "CotanTimesLength", EdgeWeights::CotanTimesLength, "[deprecated] edge weight is equal to edge length times cotangent weight" ).
+        value( "CotanWithAreaEqWeight", EdgeWeights::CotanWithAreaEqWeight, "cotangent edge weights and equation weights inversely proportional to square root of local area" );
 
     m.def( "positionVertsSmoothly", &MR::positionVertsSmoothly,
-        pybind11::arg( "mesh" ), pybind11::arg( "verts" ), pybind11::arg_v( "edgeWeightsType", MR::Laplacian::EdgeWeights::Cotan, "LaplacianEdgeWeightsParam.Cotan" ),
+        pybind11::arg( "mesh" ), pybind11::arg( "verts" ), pybind11::arg_v( "edgeWeightsType", MR::EdgeWeights::Cotan, "LaplacianEdgeWeightsParam.Cotan" ),
         pybind11::arg( "fixedSharpVertices" ) = nullptr,
         "Puts given vertices in such positions to make smooth surface both inside verts-region and on its boundary" );
 
-    m.def ( "positionVertsSmoothlySharpBd", &MR::positionVertsSmoothlySharpBd,
-        pybind11::arg( "mesh" ), pybind11::arg( "verts" ), pybind11::arg( "vertShifts" ) = nullptr,
+    m.def( "positionVertsSmoothlySharpBd", &MR::positionVertsSmoothlySharpBd,
+        pybind11::arg( "mesh" ), pybind11::arg( "verts" ), pybind11::arg( "vertShifts" ) = nullptr, pybind11::arg( "vertStabilizers" ) = nullptr,
         "Puts given vertices in such positions to make smooth surface inside verts-region, but sharp on its boundary\n"
         "\tmesh - source mesh\n"
-        "\tverts - vertices to reposition. Cannot be all vertices of a connected component of the source mesh\n"
+        "\tverts - vertices to reposition. Cannot be all vertices of a connected component of the source mesh unless vertStabilizers are given\n"
         "\tvertShifts (optional) = additional shifts of each vertex relative to smooth position\n"
+        "\vertStabilizers (optional) = per-vertex stabilizers: the more the value, the bigger vertex attraction to its original position"
     );
 } )
 

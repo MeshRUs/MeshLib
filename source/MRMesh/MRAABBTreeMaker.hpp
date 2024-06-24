@@ -56,7 +56,7 @@ int AABBTreeMaker<T>::partitionLeaves_( const BoxT & box, int firstLeaf, int las
     std::nth_element( boxedLeaves_.data() + firstLeaf, boxedLeaves_.data() + midLeaf, boxedLeaves_.data() + lastLeaf,
         [&]( const BoxedLeaf<T> & a, const BoxedLeaf<T> & b )
         {
-            return a.box.min[splitDim] < b.box.min[splitDim];
+            return a.box.min[splitDim] + a.box.max[splitDim] < b.box.min[splitDim] + b.box.max[splitDim];
         } );
     return midLeaf;
 }

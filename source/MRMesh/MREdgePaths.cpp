@@ -25,6 +25,44 @@ bool isEdgeLoop( const MeshTopology & topology, const std::vector<EdgeId> & edge
         && topology.org( edges.front() ) == topology.dest( edges.back() );
 }
 
+std::vector<EdgeLoop> splitOnSimpleLoops( const MeshTopology & topology, std::vector<EdgeLoop> && loops )
+{
+    MR_TIMER
+    std::vector<EdgeLoop> res;
+    res.reserve( loops.size() );
+    HashMap<VertId, int> vmap; // vertex -> edge# in loop with origin in vertex
+    for ( auto & loop : loops )
+    {
+        assert( isEdgeLoop( topology, loop ) );
+        for (;;)
+        {
+            bool split = false;
+            for ( int i = 0; i < loop.size(); ++i )
+            {
+                auto [it, inserted] = vmap.insert( { topology.org( loop[i] ), i } );
+                if ( !inserted )
+                {
+                    const auto beg = loop.begin() + it->second;
+                    const auto end = loop.begin() + i;
+                    res.push_back( EdgeLoop{ beg, end } );
+                    assert( isEdgeLoop( topology, res.back() ) );
+                    loop.erase( beg, end );
+                    assert( isEdgeLoop( topology, loop ) );
+                    split = true;
+                    break;
+                }
+            }
+            vmap.clear();
+            if ( split )
+                continue;
+            res.push_back( std::move( loop ) );
+            break;
+        }
+    }
+
+    return res;
+}
+
 void reverse( EdgePath & path )
 {
     std::reverse( path.begin(), path.end() );

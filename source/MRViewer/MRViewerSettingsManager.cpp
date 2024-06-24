@@ -45,6 +45,7 @@ const std::string cEnableSavedDialogPositions = "enableSavedDialogPositions";
 const std::string cShowInfoInObjectTree = "showInfoInObjectTree";
 const std::string cAutoClosePlugins = "autoClosePlugins";
 const std::string cShowExperimentalFeatures = "showExperimentalFeatures";
+const std::string cAmbientCoefSelectedObj = "ambientCoefSelectedObj";
 }
 
 namespace Defaults
@@ -365,6 +366,12 @@ void ViewerSettingsManager::loadSettings( Viewer& viewer )
         }
         viewer.setTouchpadParameters( parameters );
     }
+
+    if ( cfg.hasJsonValue( cAmbientCoefSelectedObj ) )
+    {
+        const auto& ambientCoefSelectedObj = cfg.getJsonValue( cAmbientCoefSelectedObj );
+        SceneSettings::set( SceneSettings::FloatType::AmbientCoefSelectedObj, ambientCoefSelectedObj.asFloat() );
+    }
 }
 
 void ViewerSettingsManager::saveSettings( const Viewer& viewer )
@@ -475,6 +482,9 @@ void ViewerSettingsManager::saveSettings( const Viewer& viewer )
     touchpadParametersJson["cancellable"] = touchpadParameters.cancellable;
     touchpadParametersJson["swipeMode"] = (int)touchpadParameters.swipeMode;
     cfg.setJsonValue( cTouchpadSettings, touchpadParametersJson );
+
+    Json::Value ambientCoefSelectedObj = SceneSettings::get( SceneSettings::FloatType::AmbientCoefSelectedObj );
+    cfg.setJsonValue( cAmbientCoefSelectedObj, ambientCoefSelectedObj);
 }
 
 const std::string & ViewerSettingsManager::getLastExtention( ObjType objType )

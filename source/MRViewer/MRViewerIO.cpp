@@ -81,6 +81,11 @@ VoidOrErrStr saveObjectToFile( const Object& obj, const std::filesystem::path& f
         {
             if ( objMesh->getColoringType() == ColoringType::VertsColorMap )
                 saveSettings.colors = &objMesh->getVertsColorMap();
+            if ( objMesh->getUVCoords().size() >= objMesh->mesh()->topology.lastValidVert() )
+                saveSettings.uvMap = &objMesh->getUVCoords();
+            if ( !objMesh->getTexture().pixels.empty() )
+                saveSettings.texture = &objMesh->getTexture();
+            saveSettings.materialName = utf8string( filename.stem() );
             result = MeshSave::toAnySupportedFormat( *objMesh->mesh(), filename, saveSettings );
         }
         else

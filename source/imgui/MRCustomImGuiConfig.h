@@ -41,3 +41,8 @@ static inline ImGuiInputTextFlags InputScalar_DefaultCharsFilter( ImGuiDataType,
 }
 }
 #endif
+
+// declare function here to have access to it
+// duplicate of ImGui_ImplGlfw_KeyToImGuiKey
+// please review this function if update ImGui
+IMGUI_API int GlfwToImGuiKey_Duplicate( int key );

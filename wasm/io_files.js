@@ -1,6 +1,6 @@
 var open_files_dialog_popup = function (extensions, multi) {
   var labelString = multi ? "Select Files" : "Select File";
-  var { overlay, popup } = createOverlayPopup('show_browse_dialog', labelString, 400, 150);
+  var { overlay, popup } = createOverlayPopup('show_browse_dialog', labelString, 400, 150, true, true);
 
   var file_selector_label = document.createElement('label');
   file_selector_label.setAttribute('for', 'FileSelectorTag');
@@ -34,29 +34,31 @@ var open_files_dialog_popup = function (extensions, multi) {
 }
 
 var download_file_dialog_popup = function (defaultName, extensions) {
-
+  var isLightThemeEnabled = getColorTheme();
   var { overlay, popup } = createOverlayPopup('show_download_dialog', "Save File", 440, 232);
 
+  var textColor = isLightThemeEnabled ? '#181a1d' : '#fff';
+  var bgColor = isLightThemeEnabled ? '#f5f6f9' : '#000';
   var name_label = document.createElement('label');
-  name_label.setAttribute('style', 'width: 144px;height: 20px;position: absolute;top: 86px;left: 62px;margin-left: 0px;font-size: 14px;color: #fff;');
+  name_label.setAttribute('style', 'width: 144px;height: 20px;position: absolute;top: 86px;left: 62px;margin-left: 0px;font-size: 14px;color:' + textColor );
   name_label.innerHTML = 'Name';
   name_label.setAttribute('class', 'unselectable');
 
   var name_selector = document.createElement('input');
   name_selector.setAttribute('type', 'text');
   name_selector.setAttribute('id', 'download_name');
-  name_selector.setAttribute('style', 'position: absolute;top: 81px;left: 50%;transform: translate(-50%, 0px);background-color: #000;border-radius: 4px;width: 198px;height: 26px;border: solid 1px #5f6369;color: #fff;padding: 0px 0px;');
+  name_selector.setAttribute('style', 'position: absolute;top: 81px;left: 50%;transform: translate(-50%, 0px);background-color:' + bgColor +';border-radius: 4px;width: 198px;height: 26px;border: solid 1px #5f6369;color:' + textColor + 'padding: 0px 0px;');
 
   name_selector.value = defaultName;
 
   var ext_label = document.createElement('label');
-  ext_label.setAttribute('style', 'width: 59px;height: 20px;font-size: 14px;position: absolute;color: #fff;top: 131px;left: 38px;');
+  ext_label.setAttribute('style', 'width: 59px;height: 20px;font-size: 14px;position: absolute;color:' + textColor + ';top: 131px;left: 38px;');
   ext_label.innerHTML = 'Extension';
   ext_label.setAttribute('class', 'unselectable');
 
   var list_item = document.createElement('select');
   list_item.setAttribute('id', 'download_ext');
-  list_item.setAttribute('style', 'position: absolute;top: 125px;left: 50%;transform: translate(-50%, 0px);background-color: #000;border-radius: 4px;width: 200px;height: 28px;border: solid 1px #5f6369;color: #fff;padding: 0px 0px;');
+  list_item.setAttribute('style', 'position: absolute;top: 125px;left: 50%;transform: translate(-50%, 0px);background-color:' + bgColor + ';border-radius: 4px;width: 200px;height: 28px;border: solid 1px #5f6369;color:' + textColor + 'padding: 0px 0px;');
   var splitExt = extensions.split(', ');
   for (var i = 0; i < splitExt.length; i++) {
     var option_el = document.createElement('option');
@@ -84,8 +86,7 @@ var download_file_dialog_popup = function (defaultName, extensions) {
 }
 
 var open_directory_dialog_popup = function () {
-  var { overlay, popup } = createOverlayPopup('show_browse_dialog', "Select Directory", 400, 150);
-
+  var { overlay, popup } = createOverlayPopup('show_browse_dialog', "Select Directory", 400, 150);  
   var file_selector_label = document.createElement('label');
   file_selector_label.setAttribute('for', 'FileSelectorTag');
   file_selector_label.setAttribute('style', 'position:absolute;top:50%;left:50%;transform:translate(-50%,50%);width: 120px;  height: 28px; border-radius: 4px;');

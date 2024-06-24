@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  VCPKG-VERSION: '2024.04.26'
+  VCPKG-VERSION: '2024.06.15'
 
 jobs:
   image-select:
@@ -106,8 +106,9 @@ jobs:
           echo ${{github.repository}}
           MATRIX=" \
           {\"include\":[ \
-          {\"dockerfile\":\"ubuntu20Dockerfile\",   \"image\":\"ubuntu\",         \"os\":\"ubuntu-latest\"}, \
+          {\"dockerfile\":\"ubuntu20Dockerfile\",   \"image\":\"ubuntu20\",         \"os\":\"ubuntu-latest\"}, \
           {\"dockerfile\":\"ubuntu22Dockerfile\",   \"image\":\"ubuntu22\",       \"os\":\"ubuntu-latest\"}, \
+          {\"dockerfile\":\"ubuntu24Dockerfile\",   \"image\":\"ubuntu24\",       \"os\":\"ubuntu-latest\"}, \
           {\"dockerfile\":\"ubuntu20Dockerfile\",   \"image\":\"ubuntu-arm64\",   \"os\":[\"self-hosted\", \"linux-arm64\"]}, \
           {\"dockerfile\":\"ubuntu22Dockerfile\",   \"image\":\"ubuntu22-arm64\", \"os\":[\"self-hosted\", \"linux-arm64\"]}, \
           {\"dockerfile\":\"fedora39Dockerfile\",   \"image\":\"fedora39\",       \"os\":\"ubuntu-latest\"}, \

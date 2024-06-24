@@ -93,7 +93,7 @@ void Toolbar::drawToolbar()
     ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, windowPadding );
     ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 1.0f );
     ImGui::Begin(
-        "QuickAccess", nullptr,
+        "QuickAccess##[rect_allocator_ignore]", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoFocusOnAppearing
     );

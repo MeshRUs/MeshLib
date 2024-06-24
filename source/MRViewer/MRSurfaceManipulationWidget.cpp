@@ -5,9 +5,8 @@
 #include "MRMesh/MRMesh.h"
 #include "MRViewerInstance.h"
 #include "MRAppendHistory.h"
-#include "MRViewer/MRGladGlfw.h"
-
 #include "MRMouse.h"
+#include "MRViewer/MRGladGlfw.h"
 #include "MRMesh/MREdgePaths.h"
 #include "MRMesh/MRPositionVertsSmoothly.h"
 #include "MRMesh/MRSurfaceDistance.h"
@@ -16,11 +15,23 @@
 #include "MRMesh/MRTimer.h"
 #include "MRMesh/MRMeshRelax.h"
 #include "MRMesh/MRBitSetParallelFor.h"
-
+#include "MRMesh/MRRegionBoundary.h"
+#include "MRMesh/MRFillHoleNicely.h"
+#include "MRMesh/MRLaplacian.h"
 
 namespace MR
 {
 //const float k = r < 1-a ? std::sqrt( sqr( 1 - a ) - sqr( r ) ) + ( 1 - a ) : -std::sqrt( sqr( a ) - sqr( r - 1 ) ) + a; // alternative version F_point_shift(r,i) (i == a)
+
+// not in the header to be able to destroy Laplacian
+SurfaceManipulationWidget::SurfaceManipulationWidget()
+{
+}
+
+// not in the header to be able to destroy Laplacian
+SurfaceManipulationWidget::~SurfaceManipulationWidget()
+{
+}
 
 void SurfaceManipulationWidget::init( const std::shared_ptr<ObjectMesh>& objectMesh )
 {
@@ -47,8 +58,7 @@ void SurfaceManipulationWidget::init( const std::shared_ptr<ObjectMesh>& objectM
     visualizationDistanceMap_ = VertScalars( numV, 0.f );
 
     obj_->setAncillaryTexture( { { { Color { 255, 64, 64, 255 }, Color { 0, 0, 0, 0 } }, Vector2i { 1, 2 } } } );
-    uvs_ = VertUVCoords( numV, { 0, 1 } );
-    obj_->setAncillaryUVCoords( uvs_ );
+    obj_->setAncillaryUVCoords( VertUVCoords( numV, { 0, 1 } ) );
 
     initConnections_();
     mousePressed_ = false;
@@ -69,8 +79,6 @@ void SurfaceManipulationWidget::reset()
     pointsShift_.clear();
     editingDistanceMap_.clear();
     visualizationDistanceMap_.clear();
-
-    uvs_ = {};
 
     resetConnections_();
     mousePressed_ = false;
@@ -99,7 +107,6 @@ bool SurfaceManipulationWidget::onMouseDown_( Viewer::MouseButton button, int /*
     if ( !obj || obj != obj_ )
         return false;
 
-
     mousePressed_ = true;
     if ( settings_.workMode == WorkMode::Laplacian )
     {
@@ -115,9 +122,13 @@ bool SurfaceManipulationWidget::onMouseDown_( Viewer::MouseButton button, int /*
     }
     else
     {
-        oldMesh_ = std::dynamic_pointer_cast< ObjectMesh >( obj_->clone() );
-        oldMesh_->setAncillary( true );
-        obj_->setPickable( false );
+        if ( settings_.workMode != WorkMode::Patch )
+        {
+            // in patch mode the mesh does not change till mouse up, and we always need to pick in it (before and right after patch)
+            oldMesh_ = std::dynamic_pointer_cast< ObjectMesh >( obj_->clone() );
+            oldMesh_->setAncillary( true );
+            obj_->setPickable( false );
+        }
         appendHistoryAction_ = true;
         std::string name = "Brush: ";
         if ( settings_.workMode == WorkMode::Add )
@@ -126,6 +137,8 @@ bool SurfaceManipulationWidget::onMouseDown_( Viewer::MouseButton button, int /*
             name += "Remove";
         else if ( settings_.workMode == WorkMode::Relax )
             name += "Smooth";
+        else if ( settings_.workMode == WorkMode::Patch )
+            name += "Patch";
         historyAction_ = std::make_shared<ChangeMeshAction>( name, obj_ );
         changeSurface_();
     }
@@ -139,35 +152,72 @@ bool SurfaceManipulationWidget::onMouseUp_( Viewer::MouseButton button, int /*mo
         return false;
 
     mousePressed_ = false;
-    if ( settings_.workMode != WorkMode::Laplacian )
+    if ( settings_.workMode == WorkMode::Laplacian )
+        return true;
+
+    size_t numV = obj_->mesh()->topology.lastValidVert() + 1;
+    pointsShift_ = VertScalars( numV, 0.f );
+
+    auto & mesh = *obj_->varMesh();
+    if ( settings_.workMode == WorkMode::Patch )
     {
-        size_t numV = obj_->mesh()->topology.lastValidVert() + 1;
-        pointsShift_ = VertScalars( numV, 0.f );
-
-        if ( ( settings_.workMode == WorkMode::Add || settings_.workMode == WorkMode::Remove ) &&
-            settings_.relaxForceAfterEdit > 0.f && generalEditingRegion_.any() )
+        ownMeshChangedSignal_ = true;
+        auto faces = getIncidentFaces( mesh.topology, generalEditingRegion_ );
+        if ( faces.any() )
         {
-            ownMeshChangedSignal_ = true;
+            auto bds = delRegionKeepBd( mesh, faces );
+            for ( const auto & bd : bds )
+            {
+                if ( bd.empty() )
+                    continue;
+                // assert( isHoleBd( mesh.topology, bd ) ) can probably fail due to different construction of loops,
+                // so we check every edge of every loop below
+                const auto len = calcPathLength( bd, mesh );
+                const auto avgLen = len / bd.size();
+                FillHoleNicelySettings settings
+                {
+                    .triangulateParams =
+                    {
+                        .metric = getUniversalMetric( mesh ),
+                        .multipleEdgesResolveMode = FillHoleParams::MultipleEdgesResolveMode::Strong
+                    },
+                    .maxEdgeLen = 2 * (float)avgLen,
+                    .edgeWeights = settings_.edgeWeights
+                };
+                for ( auto e : bd )
+                    if ( !mesh.topology.left( e ) )
+                        fillHoleNicely( mesh, e, settings );
+            }
+            obj_->setDirtyFlags( DIRTY_ALL );
 
-            MeshRelaxParams params;
-            params.region = &generalEditingRegion_;
-            params.force = settings_.relaxForceAfterEdit;
-            params.iterations = 5;
-            relax( *obj_->varMesh(), params );
-            obj_->setDirtyFlags( DIRTY_PRIMITIVES );
+            // otherwise whole surface becomes red after patch and before mouse move
+            updateRegion_( mousePos_ );
         }
-        generalEditingRegion_ = VertBitSet( numV, false );
-
-        obj_->setPickable( true );
-
-        oldMesh_.reset();
     }
+    else if ( ( settings_.workMode == WorkMode::Add || settings_.workMode == WorkMode::Remove ) &&
+        settings_.relaxForceAfterEdit > 0.f && generalEditingRegion_.any() )
+    {
+        ownMeshChangedSignal_ = true;
+
+        MeshRelaxParams params;
+        params.region = &generalEditingRegion_;
+        params.force = settings_.relaxForceAfterEdit;
+        params.iterations = 5;
+        relax( mesh, params );
+        obj_->setDirtyFlags( DIRTY_PRIMITIVES );
+    }
+    generalEditingRegion_ = VertBitSet( numV, false );
+
+    obj_->setPickable( true );
+
+    oldMesh_.reset();
 
     return true;
 }
 
 bool SurfaceManipulationWidget::onMouseMove_( int mouse_x, int mouse_y )
 {
+    auto mousePos = Vector2f{ float( mouse_x ), float( mouse_y ) };
     if ( settings_.workMode == WorkMode::Laplacian )
     {
         if ( mousePressed_ )
@@ -177,14 +227,14 @@ bool SurfaceManipulationWidget::onMouseMove_( int mouse_x, int mouse_y )
                 appendHistoryAction_ = false;
                 AppendHistory( std::move( historyAction_ ) );
             }
-            laplacianMoveVert_( Vector2( float( mouse_x ), float( mouse_y ) ) );
+            laplacianMoveVert_( mousePos );
         }
         else
-            updateRegion_( Vector2f{ float( mouse_x ), float( mouse_y ) } );
+            updateRegion_( mousePos );
     }
     else
     {
-        updateRegion_( Vector2f{ float( mouse_x ), float( mouse_y ) } );
+        updateRegion_( mousePos );
         if ( mousePressed_ )
             changeSurface_();
     }
@@ -243,6 +293,12 @@ void SurfaceManipulationWidget::changeSurface_()
 
     ownMeshChangedSignal_ = true;
 
+    if ( settings_.workMode == WorkMode::Patch )
+    {
+        generalEditingRegion_ |= singleEditingRegion_;
+        return; // everything is done on mouse up
+    }
+
     if ( settings_.workMode == WorkMode::Relax )
     {
         MeshRelaxParams params;
@@ -287,11 +343,15 @@ void SurfaceManipulationWidget::changeSurface_()
 
 void SurfaceManipulationWidget::updateUVmap_( bool set )
 {
+    VertUVCoords uvs;
+    obj_->updateAncillaryUVCoords( uvs );
+    uvs.resizeWithReserve( obj_->mesh()->points.size(), UVCoord{ 0, 1 } );
     const float normalize = 0.5f / settings_.radius;
     BitSetParallelFor( visualizationRegion_, [&] ( VertId v )
     {
-        uvs_[v] = set ? UVCoord{ 0, visualizationDistanceMap_[v] * normalize } : UVCoord{ 0, 1 };
+        uvs[v] = set ? UVCoord{ 0, visualizationDistanceMap_[v] * normalize } : UVCoord{ 0, 1 };
     } );
+    obj_->setAncillaryUVCoords( std::move( uvs ) );
 }
 
 void SurfaceManipulationWidget::updateRegion_( const Vector2f& mousePos )
@@ -421,7 +481,7 @@ void SurfaceManipulationWidget::updateVizualizeSelection_( const ObjAndPick& obj
     badRegion_ = false;
     if ( objAndPick.first == objMeshPtr )
     {
-        PointOnFace pOnFace{ objAndPick.second.face, objAndPick.second.point };
+        PointOnFace pOnFace = objAndPick.second;
         if ( settings_.workMode == WorkMode::Laplacian )
         {
             const VertId vert = mesh.getClosestVertex( pOnFace );
@@ -444,7 +504,6 @@ void SurfaceManipulationWidget::updateVizualizeSelection_( const ObjAndPick& obj
         if ( !badRegion_ )
             updateUVmap_( true );
     }
-    obj_->setAncillaryUVCoords( uvs_ );
 }
 
 }

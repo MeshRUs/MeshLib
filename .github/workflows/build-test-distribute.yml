@@ -18,7 +18,7 @@ on:
 
 
 env:
-  VCPKG-VERSION: '2024.04.26'
+  VCPKG-VERSION: '2024.06.15'
 
 jobs:
   prepare-image:
@@ -41,16 +41,6 @@ jobs:
       UPLOAD_ARTIFACTS: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
     secrets: inherit
 
-  ubuntu20-build-test:
-    needs: [ prepare-image, versioning-and-release-url ]
-    uses: ./.github/workflows/build-test-ubuntu20.yml
-    with:
-      docker_image_tag: ${{needs.prepare-image.outputs.docker_image_tag}}
-      app_version: ${{needs.versioning-and-release-url.outputs.app_version}}
-      full_config_build: ${{ github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
-      UPLOAD_ARTIFACTS: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
-    secrets: inherit
-
   ubuntu-arm64-build-test:
     needs: [ prepare-image, versioning-and-release-url ]
     uses: ./.github/workflows/build-test-ubuntu-arm64.yml
@@ -61,9 +51,9 @@ jobs:
       UPLOAD_ARTIFACTS: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
     secrets: inherit
 
-  ubuntu22-build-test:
+  ubuntu-x64-build-test:
     needs: [ prepare-image, versioning-and-release-url ]
-    uses: ./.github/workflows/build-test-ubuntu22.yml
+    uses: ./.github/workflows/build-test-ubuntu-x64.yml
     with:
       docker_image_tag: ${{needs.prepare-image.outputs.docker_image_tag}}
       app_version: ${{needs.versioning-and-release-url.outputs.app_version}}
@@ -133,7 +123,7 @@ jobs:
       - name: Update vcpkg packages
         run: |
           .\thirdparty\install.bat --write-s3
-          
+
       - name: Download Windows Binaries Archive
         uses: actions/download-artifact@v4
         with:
@@ -164,8 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - update-win-version
-      - ubuntu20-build-test
-      - ubuntu22-build-test
+      - ubuntu-x64-build-test
       - ubuntu-arm64-build-test
       - fedora-build-test
       - emscripten-build-test

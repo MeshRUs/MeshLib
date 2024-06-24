@@ -280,7 +280,7 @@ void AddCustomThemePlugin::update_()
     for ( int i = 0; i<int( ColorTheme::RibbonColorsType::Count ); ++i )
         ribbonColors_[i] = Vector4f( ColorTheme::getRibbonColor( ColorTheme::RibbonColorsType( i ) ) );
 
-    ColorTheme::setupFromJson( backupTheme );
+    ColorTheme::setupFromJson( backupTheme, ColorTheme::getThemeType() );
 }
 
 std::string AddCustomThemePlugin::save_()

@@ -15,3 +15,7 @@ var setupColorTheme = function () {
         themeChangedCallback();
     });
 }
+
+var getColorTheme = function() {
+    return Module.ccall( 'emsGetColorTheme' );
+}

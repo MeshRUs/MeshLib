@@ -53,7 +53,7 @@ public:
     MRMESH_API virtual std::vector<std::string> getInfoLines() const override;
     virtual std::string getClassName() const override { return "Voxels"; }
 
-    /// Clears all internal data and then creates grid and calculates histogram
+    /// Clears all internal data and then creates grid and calculates histogram (surface is not built, call \ref updateHistogramAndSurface)
     MRMESH_API void construct( const SimpleVolume& simpleVolume, ProgressCallback cb = {} );
     /// Clears all internal data and calculates histogram
     MRMESH_API void construct( const FloatGrid& grid, const Vector3f& voxelSize, ProgressCallback cb = {} );

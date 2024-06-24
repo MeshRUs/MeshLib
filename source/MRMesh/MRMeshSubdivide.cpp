@@ -202,10 +202,10 @@ int subdivideMesh( Mesh & mesh, const SubdivideSettings & settings )
             const auto sharpVerts = getIncidentVerts( mesh.topology, creaseUEdges );
             if ( settings.progressCallback && !settings.progressCallback( 0.77f ) )
                 return 0;
-            positionVertsSmoothly( mesh, newVerts, Laplacian::EdgeWeights::Cotan, &sharpVerts );
+            positionVertsSmoothly( mesh, newVerts, EdgeWeights::Cotan, &sharpVerts );
         }
         else
-            positionVertsSmoothly( mesh, newVerts, Laplacian::EdgeWeights::Cotan );
+            positionVertsSmoothly( mesh, newVerts, EdgeWeights::Cotan );
     }
 
     return splitsDone;

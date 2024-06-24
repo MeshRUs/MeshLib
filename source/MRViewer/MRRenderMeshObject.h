@@ -100,6 +100,12 @@ protected:
     uint32_t dirty_{ 0 };
     // ...
     bool dirtyEdges_{ false };
+
+#ifdef __EMSCRIPTEN__
+    bool cornerMode = true;
+#else
+    bool cornerMode = false;
+#endif
 };
 
 }

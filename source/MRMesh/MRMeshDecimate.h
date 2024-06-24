@@ -85,7 +85,7 @@ struct DecimateSettings
     const VertBitSet * bdVerts = nullptr;
 
     /// Permit edge flips (in addition to collapsing) to improve Delone quality of the mesh
-    /// if it does change dihedral angle more than on this value (negative value prohibits any edge flips)
+    /// if it does not change dihedral angle more than on this value (negative value prohibits any edge flips)
     float maxAngleChange = -1;
 
     /**
@@ -109,6 +109,7 @@ struct DecimateSettings
     /// this function is called each time edge (e) is deleted;
     /// if valid (e1) is given then dest(e) = dest(e1) and their origins are in different ends of collapsing edge, e1 shall take the place of e
     std::function<void(EdgeId e, EdgeId e1)> onEdgeDel;
+
     /**
      * \brief  If not null, then vertex quadratic forms are stored there;
      * if on input the vector is not empty then initialization is skipped in favor of values from there;
@@ -120,12 +121,24 @@ struct DecimateSettings
     bool packMesh = false;
 
     /// callback to report algorithm progress and cancel it by user request
-    ProgressCallback progressCallback = {};
+    ProgressCallback progressCallback;
 
     /// If this value is more than 1, then virtually subdivides the mesh on given number of parts to process them in parallel (using many threads);
     /// unlike \ref decimateParallelMesh it does not create copies of mesh regions, so may take less memory to operate;
     /// IMPORTANT: please call mesh.packOptimally() before calling decimating with subdivideParts > 1, otherwise performance will be bad
     int subdivideParts = 1;
+
+    /// After parallel decimation of all mesh parts is done, whether to perform final decimation of whole mesh region
+    /// to eliminate small edges near the border of individual parts
+    bool decimateBetweenParts = true;
+
+    /// if not null, then it contains the faces of each subdivision part on input, which must not overlap,
+    /// and after decimation of all parts, the region inside each part is put here;
+    /// decimateBetweenParts=true or packMesh=true are not compatible with this option
+    std::vector<FaceBitSet> * partFaces = nullptr;
+
+    /// minimum number of faces in one subdivision part for ( subdivideParts > 1 ) mode
+    int minFacesInPart = 0;
 };
 
 /**
@@ -190,7 +203,7 @@ struct ResolveMeshDegenSettings
     float maxDeviation = 0;
     /// edges not longer than this value will be collapsed ignoring normals and aspect ratio checks
     float tinyEdgeLength = 0;
-    /// Permit edge flips if it does change dihedral angle more than on this value
+    /// Permit edge flips if it does not change dihedral angle more than on this value
     float maxAngleChange = PI_F / 3;
     /// the algorithm will ignore dihedral angle check if one of triangles had aspect ratio equal or more than this value;
     /// and the algorithm will permit temporary increase in aspect ratio after collapse, if before collapse one of the triangles had larger aspect ratio
@@ -222,7 +235,7 @@ struct RemeshSettings
     float targetEdgeLen = 0.001f;
     /// Maximum number of edge splits allowed during subdivision
     int maxEdgeSplits = 10'000'000;
-    /// Improves local mesh triangulation by doing edge flips if it does change dihedral angle more than on this value
+    /// Improves local mesh triangulation by doing edge flips if it does not change dihedral angle more than on this value
     float maxAngleChangeAfterFlip = 30 * PI_F / 180.0f;
     /// Maximal shift of a boundary during one edge collapse
     float maxBdShift = FLT_MAX;

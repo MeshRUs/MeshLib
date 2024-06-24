@@ -68,7 +68,7 @@ public:
     }
 
     /// doubles reserved memory until resize(newSize) can be done without reallocation
-    void resizeWithReserve( size_t newSize, T value = T() )
+    void resizeWithReserve( size_t newSize, const T & value = T() )
     {
         auto reserved = vec_.capacity();
         if ( reserved > 0 && newSize > reserved )

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MRId.h"
+#include "MRVector2.h"
 #include "MRVector3.h"
 #include <cstdint>
 #include <cstring>
@@ -18,8 +19,20 @@ struct hash<MR::Id<T>>
     }
 };
 
-template<> 
-struct hash<MR::Vector3f> 
+template<>
+struct hash<MR::Vector2f>
+{
+    size_t operator()( MR::Vector2f const& p ) const noexcept
+    {
+        std::uint64_t xy;
+        static_assert( sizeof( float ) == sizeof( std::uint32_t ) );
+        std::memcpy( &xy, &p.x, sizeof( std::uint64_t ) );
+        return size_t( xy );
+    }
+};
+
+template<>
+struct hash<MR::Vector3f>
 {
     size_t operator()( MR::Vector3f const& p ) const noexcept
     {

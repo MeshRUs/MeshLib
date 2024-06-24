@@ -6,6 +6,8 @@
 #include "MRProgressReadWrite.h"
 #include "MRBitSetParallelFor.h"
 #include "MRPch/MRFmt.h"
+#include "MRMeshTexture.h"
+#include "MRImageSave.h"
 
 #ifndef MRMESH_NO_OPENCTM
 #include "OpenCTM/openctm.h"
@@ -122,6 +124,21 @@ VoidOrErrStr toObj( const Mesh & mesh, const std::filesystem::path & file, const
     if ( !out )
         return unexpected( std::string( "Cannot open file for writing " ) + utf8string( file ) );
 
+#ifndef __EMSCRIPTEN__
+    // it is hard to handle several files output for browser, so for now it is under ifdef,
+    // anyway later it may be reworked to save simple zip and taken out of ifdef
+    if ( settings.uvMap )
+    {
+        auto mtlPath = file.parent_path() / ( settings.materialName + ".mtl" );
+        std::ofstream ofMtl( mtlPath, std::ofstream::binary );
+        if ( ofMtl )
+        {
+            ofMtl << "newmtl Texture\n";
+            if ( settings.texture && ImageSave::toPng( *settings.texture, file.parent_path() / ( settings.materialName + ".png" ) ).has_value() )
+                ofMtl << fmt::format( "map_Kd {}\n", settings.materialName + ".png" );
+        }
+    }
+#endif
     return toObj( mesh, out, settings, firstVertId );
 }
 
@@ -129,12 +146,15 @@ VoidOrErrStr toObj( const Mesh & mesh, std::ostream & out, const SaveSettings & 
 {
     MR_TIMER
     out << "# MeshInspector.com\n";
+    if ( settings.uvMap )
+        out << fmt::format( "mtllib {}.mtl\n", settings.materialName );
 
     const VertRenumber vertRenumber( mesh.topology.getValidVerts(), settings.saveValidOnly );
     const int numPoints = vertRenumber.sizeVerts();
     const VertId lastVertId = mesh.topology.lastValidVert();
 
     int numSaved = 0;
+    auto sb = subprogress( settings.progress, 0.0f, settings.uvMap ? 0.35f : 0.5f );
     for ( VertId i{ 0 }; i <= lastVertId; ++i )
     {
         if ( settings.saveValidOnly && !mesh.topology.hasVert( i ) )
@@ -150,26 +170,49 @@ VoidOrErrStr toObj( const Mesh & mesh, std::ostream & out, const SaveSettings & 
             out << fmt::format( "v {} {} {}\n", p.x, p.y, p.z );
         }
         ++numSaved;
-        if ( settings.progress && !( numSaved & 0x3FF ) && !settings.progress( float( numSaved ) / numPoints * 0.5f ) )
+        if ( settings.progress && !( numSaved & 0x3FF ) && !sb( float( numSaved ) / numPoints ) )
             return unexpected( std::string( "Saving canceled" ) );
     }
 
+    if ( settings.uvMap )
+    {
+        numSaved = 0;
+        sb = subprogress( settings.progress, 0.35f, 0.7f );
+        for ( VertId i{ 0 }; i <= lastVertId; ++i )
+        {
+            if ( settings.saveValidOnly && !mesh.topology.hasVert( i ) )
+                continue;
+            const auto& uv = ( *settings.uvMap )[i];
+            out << fmt::format( "vt {} {}\n", uv.x, uv.y );
+            ++numSaved;
+            if ( settings.progress && !( numSaved & 0x3FF ) && !sb( float( numSaved ) / numPoints ) )
+                return unexpected( std::string( "Saving canceled" ) );
+        }
+        out << "usemtl Texture\n";
+    }
+
+    sb = subprogress( settings.progress, settings.uvMap ? 0.7f : 0.5f, 1.0f );
     const float facesNum = float( mesh.topology.edgePerFace().size() );
     size_t faceIndex = 0;
     for ( const auto& e : mesh.topology.edgePerFace() )
     {
         ++faceIndex;
-        if ( settings.progress && !( faceIndex & 0x3FF ) && !settings.progress( faceIndex / facesNum * 0.5f + 0.5f ) )
+        if ( settings.progress && !( faceIndex & 0x3FF ) && !sb( faceIndex / facesNum ) )
             return unexpected( std::string( "Saving canceled" ) );
         if ( !e.valid() )
             continue;
 
         VertId a, b, c;
         mesh.topology.getLeftTriVerts( e, a, b, c );
-        out << fmt::format( "f {} {} {}\n",
-            vertRenumber( a ) + firstVertId,
-            vertRenumber( b ) + firstVertId,
-            vertRenumber( c ) + firstVertId );
+        Vector3i values( vertRenumber( a ) + firstVertId, vertRenumber( b ) + firstVertId, vertRenumber( c ) + firstVertId );
+        if ( settings.uvMap )
+            out << fmt::format( "f {}/{} {}/{} {}/{}\n",
+                values.x, values.x,
+                values.y, values.y,
+                values.z, values.z );
+        else
+            out << fmt::format( "f {} {} {}\n",
+                values.x, values.y, values.z );
     }
 
     if ( !out )

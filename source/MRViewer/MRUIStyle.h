@@ -89,6 +89,7 @@ inline bool buttonIconFlatBG( const std::string& name, const Vector2f& iconSize,
 {
     ButtonIconCustomizationParams params;
     params.flatBackgroundColor = true;
+    params.forceImguiTextColor = true;
     return buttonIconEx( name, iconSize, text, buttonSize, params );
 }
 

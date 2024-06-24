@@ -135,6 +135,12 @@ MRMESH_API void fillHole( Mesh& mesh, EdgeId a, const FillHoleParams& params = {
 /// fill all holes given by their representative edges in \param as
 MRMESH_API void fillHoles( Mesh& mesh, const std::vector<EdgeId> & as, const FillHoleParams& params = {} );
 
+/// returns true if given loop is a boundary of one hole in given mesh topology:
+/// * every edge in the loop does not have left face,
+/// * next/prev edges in the loop are related as follows: next = topology.prev( prev.sym() )
+/// if the function returns true, then any edge from the loop passed to \ref fillHole will fill the same hole
+[[nodiscard]] MRMESH_API bool isHoleBd( const MeshTopology & topology, const EdgeLoop & loop );
+
 struct FillHoleItem
 {
     // if not-negative number then it is edgeid;

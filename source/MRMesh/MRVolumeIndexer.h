@@ -50,6 +50,8 @@ public:
     size_t sizeXY() const { return sizeXY_; }
     Vector3i toPos( VoxelId id ) const;
     VoxelId toVoxelId( const Vector3i & pos ) const;
+    /// returns true if this voxel is within dimensions
+    bool isInDims( const Vector3i& pos ) const { return pos.x >= 0 && pos.x < dims_.x && pos.y >= 0 && pos.y < dims_.y && pos.z >= 0 && pos.z < dims_.z; }
     /// returns true if this voxel is on the boundary of the volume
     bool isBdVoxel( const Vector3i & pos ) const { return pos.x == 0 || pos.x + 1 == dims_.x || pos.y == 0 || pos.y + 1 == dims_.y || pos.z == 0 || pos.z + 1 == dims_.z; }
     /// returns true if v1 is within at most 6 neighbors of v0

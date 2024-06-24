@@ -12,6 +12,198 @@
 namespace MR
 {
 
+// sequential cascade indexer
+class SeqCascade : public IICPTreeIndexer
+{
+public:
+    SeqCascade( int numObjects, int maxGroupSize ) :
+        numObjects_{ numObjects },
+        maxGroupSize_{ maxGroupSize }
+    {}
+
+    virtual bool fromSameNode( ICPLayer, ICPElementId eI, ICPElementId eJ ) const override
+    {
+        return ( eI.get() / maxGroupSize_ ) == ( eJ.get() / maxGroupSize_ );
+    }
+
+    virtual ObjBitSet getElementLeaves( ICPLayer l, ICPElementId eId ) const override
+    {
+        size_t numLeaves = 1;
+        for ( int i = 0; i < l; ++i )
+            numLeaves *= maxGroupSize_;
+        ObjId first = ObjId( eId * numLeaves );
+        ObjId last = std::min( ObjId( ( eId + 1 ) * numLeaves ), ObjId( numObjects_ ) );
+        ObjBitSet obs( last );
+        obs.set( first, last - first, true );
+        return obs;
+    }
+    virtual ICPElementBitSet getElementNodes( ICPLayer l, ICPElementId eId ) const override
+    {
+        assert( l > 0 );
+        size_t nodeSize = 1;
+        for ( int i = 1; i < l; ++i )
+            nodeSize *= maxGroupSize_;
+        auto maxNode = ( numObjects_ + nodeSize - 1 ) / nodeSize;
+        ICPElementId first = ICPElementId( eId * maxGroupSize_ );
+        ICPElementId last = std::min( ICPElementId( ( eId + 1 ) * maxGroupSize_ ), ICPElementId( maxNode ) );
+        ICPElementBitSet ebs( last );
+        ebs.set( first, last - first, true );
+        return ebs;
+    }
+
+    virtual size_t getNumElements( ICPLayer l ) const override
+    {
+        size_t numLeaves = 1;
+        for ( int i = 0; i < l; ++i )
+            numLeaves *= maxGroupSize_;
+        return ( numObjects_ + numLeaves - 1 ) / numLeaves;
+    }
+    virtual size_t getNumLayers() const override
+    {
+        int numLayers = 1;
+        int numElements = numObjects_;
+        while ( numElements > 1 )
+        {
+            numElements = ( numElements + maxGroupSize_ - 1 ) / maxGroupSize_;
+            numLayers++;
+        }
+        return numLayers;
+    }
+
+private:
+    int numObjects_{ 0 };
+    int maxGroupSize_{ 0 };
+};
+
+class AABBTreeCascade : public IICPTreeIndexer
+{
+    using Subtrees = std::vector<NodeId>;
+    using LayerNodes = Vector<ICPElementBitSet, ICPElementId>;
+    using LayerLeaves = Vector<ObjBitSet, ICPElementId>;
+public:
+    AABBTreeCascade( const ICPObjects& objs, int maxGroupSize ) :
+        tree_( objs ),
+        maxGroupSize_{ maxGroupSize },
+        numObjs_{ objs.size() }
+    {
+        int numLeaves = int( objs.size() );
+        while ( numLeaves > maxGroupSize_ )
+        {
+            int numSubtrees = 1;
+            while ( numLeaves > maxGroupSize_ )
+            {
+                numLeaves = ( numLeaves + 1 ) / 2;
+                numSubtrees <<= 1;
+            }
+            layers_.emplace_back( tree_.getSubtrees( numSubtrees ) );
+            numLeaves = int( layers_.back().size() );
+        }
+        leavesPerLayer_.resize( layers_.size() );
+        for ( ICPLayer l( 0 ); l < layers_.size(); ++l )
+        {
+            const auto& subtrees = layers_[l];
+            auto& leavesOnLayer = leavesPerLayer_[l];
+            leavesOnLayer.resize( subtrees.size() );
+            ParallelFor( leavesOnLayer, [&] ( ICPElementId id )
+            {
+                leavesOnLayer[id] = tree_.getSubtreeLeaves( subtrees[id.get()] );
+            } );
+        }
+        if ( layers_.size() < 2 )
+            return;
+        nodesPerLayer_.resize( layers_.size() - 1 );
+        for ( int l = 0; l < nodesPerLayer_.size(); ++l )
+        {
+            auto& nodesOnLayer = nodesPerLayer_[l];
+            nodesOnLayer.resize( layers_[l + 1].size() );
+            for ( ICPElementId nId( 0 ); nId < nodesOnLayer.size(); ++nId )
+            {
+                ICPElementBitSet& elements = nodesOnLayer[nId];
+                elements.resize( layers_[l].size() );
+                BitSetParallelForAll( elements, [&] ( ICPElementId id )
+                {
+                    elements.set( id, ( leavesPerLayer_[l][id] & leavesPerLayer_[l + 1][nId] ).any() );
+                } );
+            }
+        }
+    }
+
+    virtual bool fromSameNode( ICPLayer l, ICPElementId eI, ICPElementId eJ ) const override
+    {
+        if ( l == 0 )
+        {
+            for ( const auto& leaves : leavesPerLayer_[0] )
+            {
+                if ( leaves.test( ObjId( eI.get() ) ) && leaves.test( ObjId( eJ.get() ) ) )
+                    return true;
+            }
+            return false;
+        }
+        if ( l - 1 < nodesPerLayer_.size() )
+        {
+            for ( const auto& elements : nodesPerLayer_[l - 1] )
+            {
+                if ( elements.test( eI ) && elements.test( eJ ) )
+                    return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    virtual ObjBitSet getElementLeaves( ICPLayer l, ICPElementId eId ) const override
+    {
+        if ( l == 0 )
+        {
+            ObjBitSet obs( ObjId( eId.get() ) + 1 );
+            obs.set( ObjId( eId.get() ) );
+            return obs;
+        }
+        assert( l - 1 < leavesPerLayer_.size() );
+        return leavesPerLayer_[l - 1][eId];
+    }
+
+    virtual ICPElementBitSet getElementNodes( ICPLayer l, ICPElementId eId ) const override
+    {
+        assert( l > 0 );
+        if ( l == 1 )
+        {
+            const auto& leaves = leavesPerLayer_[l - 1][eId];
+            ICPElementBitSet els;
+            els.init_from_block_range( leaves.m_bits.begin(), leaves.m_bits.end() );
+            return els;
+        }
+        if ( l - 2 < nodesPerLayer_.size() )
+            return nodesPerLayer_[l - 2][eId];
+
+        auto res = ICPElementBitSet( layers_.back().size() );
+        res.flip();
+        return res;
+    }
+
+    virtual size_t getNumElements( ICPLayer l ) const override
+    {
+        if ( l == 0 )
+            return numObjs_;
+        if ( l - 1 < layers_.size() )
+            return layers_[l - 1].size();
+        return 1;
+    }
+
+    virtual size_t getNumLayers() const override
+    {
+        return layers_.size() + 1;
+    }
+private:
+    AABBTreeObjects tree_;
+    int maxGroupSize_{ 0 };
+    size_t numObjs_{ 0 };
+
+    std::vector<Subtrees> layers_; // start from layer 1 (layers_[0] is l==1 from ICP)
+    std::vector<LayerNodes> nodesPerLayer_; // start from layer 1 (nodesPerLayer_[0] is l==1 from ICP)
+    std::vector<LayerLeaves> leavesPerLayer_; // start from layer 2 (leavesPerLayer_[0] is l==2 from ICP)
+};
+
 void updateGroupPairs( ICPGroupPairs& pairs, const ICPObjects& objs,
     ICPGroupProjector srcProjector, ICPGroupProjector tgtProjector, 
     float cosTreshold, float distThresholdSq, bool mutualClosest )
@@ -86,10 +278,10 @@ void updateGroupPairs( ICPGroupPairs& pairs, const ICPObjects& objs,
     } );
 }
 
-MultiwayICP::MultiwayICP( const ICPObjects& objects, float samplingVoxelSize ) :
+MultiwayICP::MultiwayICP( const ICPObjects& objects, const MultiwayICPSamplingParameters& samplingParams ) :
     objs_{ objects }
 {
-    resamplePoints( samplingVoxelSize );
+    resamplePoints( samplingParams );
 }
 
 Vector<AffineXf3f, ObjId> MultiwayICP::calculateTransformations( ProgressCallback cb )
@@ -104,9 +296,6 @@ Vector<AffineXf3f, ObjId> MultiwayICP::calculateTransformations( ProgressCallbac
             || prop_.method == ICPMethod::PointToPoint;
         
         bool res = doIteration_( !pt2pt );
-
-        if ( iter_ == 1 && perIterationCb_ )
-            perIterationCb_( 0 );
 
         if ( perIterationCb_ )
             perIterationCb_( iter_ );
@@ -150,25 +339,41 @@ Vector<AffineXf3f, ObjId> MultiwayICP::calculateTransformations( ProgressCallbac
     return res;
 }
 
-void MultiwayICP::resamplePoints( float samplingVoxelSize )
+bool MultiwayICP::resamplePoints( const MultiwayICPSamplingParameters& samplingParams )
 {
     MR_TIMER;
-    setupLayers_();
 
-    samplingSize_ = samplingVoxelSize;
+    maxGroupSize_ = samplingParams.maxGroupSize;
+    setupLayers_( samplingParams.cascadeMode );
+
+    samplingSize_ = samplingParams.samplingVoxelSize;
+    bool cascadeMode = pairsGridPerLayer_.size() > 1;
 
     Vector<VertBitSet, ObjId> samplesPerObj( objs_.size() );
 
-    ParallelFor( objs_, [&] ( ObjId ind )
+    float maxProgress = cascadeMode ? 0.2f : 0.5f;
+    auto keepGoing = ParallelFor( objs_, [&] ( ObjId ind )
     {
         const auto& obj = objs_[ind];
-        samplesPerObj[ind] = *obj.obj.pointsGridSampling( samplingVoxelSize );
-    } );
+        samplesPerObj[ind] = *obj.obj.pointsGridSampling( samplingSize_ );
+    }, subprogress( samplingParams.cb, 0.0f, maxProgress ) );
 
-    reservePairsLayer0_( std::move( samplesPerObj ) );
+    if ( !keepGoing )
+        return false;
 
+    float maxProgress2 = cascadeMode ? 0.4f : 1.0f;
+    reservePairsLayer0_( std::move( samplesPerObj ), subprogress( samplingParams.cb, maxProgress, maxProgress2 ) );
+
+    if ( !cascadeMode )
+        return true;
+
+    maxProgress = maxProgress2;
+    maxProgress2 = 0.7f;
+    auto samplesPerUnit = resampleUpperLayers_( subprogress( samplingParams.cb, maxProgress, maxProgress2 ) );
+    if ( !samplesPerUnit )
+        return false;
     // only do something if cascade mode is required, really should be called on each iteration
-    reserveUpperLayerPairs_( resampleUpperLayers_() );
+    return reserveUpperLayerPairs_( std::move( *samplesPerUnit ), subprogress( samplingParams.cb, maxProgress2, 1.0f ) );
 }
 
 float MultiwayICP::getMeanSqDistToPoint() const
@@ -217,13 +422,38 @@ float MultiwayICP::getMeanSqDistToPlane() const
     return numSum.rootMeanSqF();
 }
 
+size_t MultiwayICP::getNumSamples() const
+{
+    size_t num = 0;
+    for ( ICPLayer l( 0 ); l < pairsGridPerLayer_.size(); ++l )
+    {
+        const auto& pairs = pairsGridPerLayer_[l];
+        // it is deterministic to reduce integers without parallel_deterministic_reduce
+        num += tbb::parallel_reduce( tbb::blocked_range( size_t( 0 ), pairs.size() * pairs.size() ), size_t( 0 ),
+        [&] ( const auto& range, size_t curr )
+        {
+            for ( size_t r = range.begin(); r < range.end(); ++r )
+            {
+                size_t i = r % pairs.size();
+                size_t j = r / pairs.size();
+                if ( i == j )
+                    continue;
+                curr += MR::getNumSamples( pairs[ICPElementId( i )][ICPElementId( j )] );
+            }
+            return curr;
+        }, [] ( auto a, auto b ) { return a + b; } );
+    }
+    return num;
+}
+
 size_t MultiwayICP::getNumActivePairs() const
 {
     size_t num = 0;
     for ( ICPLayer l( 0 ); l < pairsGridPerLayer_.size(); ++l )
     {
         const auto& pairs = pairsGridPerLayer_[l];
-        num += tbb::parallel_deterministic_reduce( tbb::blocked_range( size_t( 0 ), pairs.size() * pairs.size() ), size_t( 0 ),
+        // it is deterministic to reduce integers without parallel_deterministic_reduce
+        num += tbb::parallel_reduce( tbb::blocked_range( size_t( 0 ), pairs.size() * pairs.size() ), size_t( 0 ),
         [&] ( const auto& range, size_t curr )
         {
             for ( size_t r = range.begin(); r < range.end(); ++r )
@@ -245,31 +475,35 @@ std::string MultiwayICP::getStatusInfo() const
     return getICPStatusInfo( iter_, resultType_ );
 }
 
-void MultiwayICP::updateAllPointPairs()
+bool MultiwayICP::updateAllPointPairs( ProgressCallback cb )
 {
     MR_TIMER;
     for ( ICPLayer l( 0 ); l < pairsGridPerLayer_.size(); ++l )
-        updateLayerPairs_( l );
+    {
+        bool keepGoing = updateLayerPairs_( l, subprogress( cb, float( l ) / float( pairsGridPerLayer_.size() ), float( l + 1 ) / float( pairsGridPerLayer_.size() ) ) );
+        if ( !keepGoing )
+            return false;
+    }
+    return true;
 }
 
-void MultiwayICP::setupLayers_()
+void MultiwayICP::setupLayers_( MultiwayICPSamplingParameters::CascadeMode mode )
 {
     if ( maxGroupSize_ <= 1 || objs_.size() <= maxGroupSize_ )
     {
         pairsGridPerLayer_.resize( 1 );
         return;
     }
-    int numLayers = 1;
-    int numElements = int( objs_.size() );
-    while ( numElements > 1 )
-    {
-        numElements = ( numElements + maxGroupSize_ - 1 ) / maxGroupSize_;
-        numLayers++;
-    }
-    pairsGridPerLayer_.resize( numLayers );
+    if ( mode == MultiwayICPSamplingParameters::CascadeMode::Sequential )
+        cascadeIndexer_ = std::make_unique<SeqCascade>( int( objs_.size() ), maxGroupSize_ );
+    else if ( mode == MultiwayICPSamplingParameters::CascadeMode::AABBTreeBased )
+        cascadeIndexer_ = std::make_unique<AABBTreeCascade>( objs_, maxGroupSize_ );
+    
+    assert( cascadeIndexer_ );
+    pairsGridPerLayer_.resize( cascadeIndexer_->getNumLayers() );
 }
 
-void MultiwayICP::reservePairsLayer0_( Vector<VertBitSet, ObjId>&& samplesPerObj )
+bool MultiwayICP::reservePairsLayer0_( Vector<VertBitSet, ObjId>&& samplesPerObj, ProgressCallback cb )
 {
     bool cascadeMode = pairsGridPerLayer_.size() > 1;
 
@@ -288,9 +522,7 @@ void MultiwayICP::reservePairsLayer0_( Vector<VertBitSet, ObjId>&& samplesPerObj
 
             if ( cascadeMode )
             {
-                auto groupI = i / maxGroupSize_;
-                auto groupJ = j / maxGroupSize_;
-                if ( groupI != groupJ )
+                if ( !cascadeIndexer_->fromSameNode( 0, i, j ) )
                     continue;
             }
 
@@ -306,59 +538,52 @@ void MultiwayICP::reservePairsLayer0_( Vector<VertBitSet, ObjId>&& samplesPerObj
             thisPairs.active.reserve( thisPairs.vec.size() );
             thisPairs.active.clear();
         }
+        if ( !reportProgress( cb, float( i + 1 ) / float( objs_.size() ), i, 64 ) )
+            return false;
     }
+    return true;
 }
 
-MultiwayICP::LayerSamples MultiwayICP::resampleUpperLayers_()
+std::optional<MultiwayICP::LayerSamples> MultiwayICP::resampleUpperLayers_( ProgressCallback cb )
 {
     MR_TIMER;
     if ( pairsGridPerLayer_.size() < 2 )
         return {};
 
-    int numLayers = 1;
-    int numGroups = ( int( objs_.size() ) + maxGroupSize_ - 1 ) / maxGroupSize_;
-    while ( numGroups > 1 )
-    {
-        numLayers++;
-        numGroups = ( numGroups + maxGroupSize_ - 1 ) / maxGroupSize_;
-    }
-
+    auto numLayers = cascadeIndexer_->getNumLayers();
     LayerSamples samples( numLayers );
-    int groupSize = 1;
     for ( ICPLayer l = 1; l < numLayers; ++l )
     {
-        groupSize *= maxGroupSize_;
-        int layerSize = ( int( objs_.size() ) + groupSize - 1 ) / groupSize;
         auto& layerSamples = samples[l];
-        layerSamples.resize( layerSize );
-        ParallelFor( ICPElementId( 0 ), ICPElementId( layerSize ), [&] ( ICPElementId gId )
+        layerSamples.resize( cascadeIndexer_->getNumElements( l ) );
+        bool keepGoing = ParallelFor( layerSamples, [&] ( ICPElementId gId )
         {
-            // TODO: use GroupIndexer
-            ObjId first = ObjId( groupSize * gId );
-            ObjId last = ObjId( std::min( int( objs_.size() ), groupSize * ( gId + 1 ) ) );
-            Vector<ModelPointsData, ObjId> groupData( last - first );
-            for ( ObjId i( 0 ); i < groupData.size(); ++i )
+            const auto& layerLeaves = cascadeIndexer_->getElementLeaves( l, gId );
+            Vector<ModelPointsData, ObjId> groupData;
+            groupData.reserve( layerLeaves.count() );            
+            for ( ObjId oId : layerLeaves )
             {
-                const auto& obj = objs_[i + first];
-                groupData[i] = { .points = &obj.obj.points(), .validPoints = &obj.obj.validPoints(),.xf = &obj.xf };
+                const auto& obj = objs_[oId];
+                groupData.emplace_back( ModelPointsData{ .points = &obj.obj.points(), .validPoints = &obj.obj.validPoints(),.xf = &obj.xf,.fakeObjId = oId } );
             }
             layerSamples[gId] = *multiModelGridSampling( groupData, samplingSize_ );
-            for ( auto& smp : layerSamples[gId] )
-                smp.objId += first; // works only if Objects in group are continuously stored
-        } );
+        }, subprogress( cb, float( l - 1 ) / float( numLayers - 1 ), float( l ) / float( numLayers - 1 ) ) );
+        if ( !keepGoing )
+            return {};
     }
     return samples;
 }
 
-void MultiwayICP::reserveUpperLayerPairs_( LayerSamples&& samples )
+bool MultiwayICP::reserveUpperLayerPairs_( LayerSamples&& samples, ProgressCallback cb )
 {
     MR_TIMER;
     if ( samples.empty() )
-        return;
+        return true;
     assert( pairsGridPerLayer_.size() > 0 );
     pairsGridPerLayer_.resize( samples.size() );
     for ( ICPLayer l( 1 ); l < pairsGridPerLayer_.size(); ++l )
     {
+        auto sb = subprogress( cb, float( l - 1 ) / float( pairsGridPerLayer_.size() - 1 ), float( l ) / float( pairsGridPerLayer_.size() - 1 ) );
         const auto& samplesOnLayer = samples[l];
         auto& pairsOnLayer = pairsGridPerLayer_[l];
         int numGroups = int( samplesOnLayer.size() );
@@ -373,9 +598,7 @@ void MultiwayICP::reserveUpperLayerPairs_( LayerSamples&& samples )
                 if ( gI == gJ )
                     continue;
 
-                auto hyperGroupI = gI / maxGroupSize_;
-                auto hyperGroupJ = gJ / maxGroupSize_;
-                if ( hyperGroupI != hyperGroupJ )
+                if ( !cascadeIndexer_->fromSameNode( l, gI, gJ ) )
                     continue;
 
                 auto& thisPairs = pairsOnGroup[gJ];
@@ -386,16 +609,16 @@ void MultiwayICP::reserveUpperLayerPairs_( LayerSamples&& samples )
                 thisPairs.active.reserve( thisPairs.vec.size() );
                 thisPairs.active.clear();
             }
+            if ( !reportProgress( sb, float( gI + 1 ) / float( numGroups ) ) )
+                return false;
         }
     }
+    return true;
 }
 
-void MultiwayICP::updateLayerPairs_( ICPLayer l )
+bool MultiwayICP::updateLayerPairs_( ICPLayer l, ProgressCallback cb )
 {
     MR_TIMER;
-    int groupSize = 1;
-    for ( int i = 1; i <= l; ++i )
-        groupSize *= maxGroupSize_;
     auto numGroups = pairsGridPerLayer_[l].size();
     bool cascadeMode = pairsGridPerLayer_.size() > 1;
 
@@ -404,23 +627,30 @@ void MultiwayICP::updateLayerPairs_( ICPLayer l )
 
     // build trees
     using LayerTrees = Vector<AABBTreeObjects, ICPElementId>;
+    using LayerMaps = Vector<ObjMap, ICPElementId>;
     LayerTrees trees;
+    LayerMaps maps;
     if ( l > 0 )
     {
         // only for upper layers
         trees.resize( numGroups );
+        maps.resize( numGroups );
         ParallelFor( trees, [&] ( ICPElementId gI )
         {
-            // TODO: use GroupIndexer
-            auto gFirst = ObjId( gI * groupSize );
-            auto gLast = ObjId( std::min( ( gI + 1 ) * groupSize, int( objs_.size() ) ) );
-
-            ICPObjects gObjs( begin( objs_ ) + gFirst, begin( objs_ ) + gLast );
-            trees[gI] = AABBTreeObjects( std::move( gObjs ) );
+            const auto& leaves = cascadeIndexer_->getElementLeaves( l, gI );
+            maps[gI].reserve( leaves.count() );
+            ICPObjects leafObjs; 
+            leafObjs.reserve( leaves.count() );
+            for ( auto leaf : leaves )
+            {
+                maps[gI].emplace_back( leaf );
+                leafObjs.emplace_back( objs_[leaf] );
+            }
+            trees[gI] = AABBTreeObjects( std::move( leafObjs ) );
         } );
     }
 
-    auto createProjector = [&] ( ICPElementId elId, ObjId first )->ICPGroupProjector
+    auto createProjector = [&] ( ICPElementId elId )->ICPGroupProjector
     {
         if ( l == 0 )
             return [this, elId] ( const Vector3f& p, MeshOrPoints::ProjectionResult& res, ObjId& resId ) mutable
@@ -430,14 +660,14 @@ void MultiwayICP::updateLayerPairs_( ICPLayer l )
             if ( res.closestVert )
                 resId = ObjId( elId.get() );
         };
-        return [&trees, elId, first] ( const Vector3f& p, MeshOrPoints::ProjectionResult& res, ObjId& resId )
+        return [&trees, &maps, elId] ( const Vector3f& p, MeshOrPoints::ProjectionResult& res, ObjId& resId )
         {
             projectOnAll( p, trees[elId], res.distSq, [&] ( ObjId oId, MeshOrPoints::ProjectionResult prj )
             {
                 if ( prj.distSq >= res.distSq )
                     return;
                 res = prj;
-                resId = oId + first;
+                resId = maps[elId][oId];
             } );
         };
     };
@@ -445,7 +675,7 @@ void MultiwayICP::updateLayerPairs_( ICPLayer l )
 
     // update pairs
     auto gridSize = numGroups * numGroups;
-    ParallelFor( 0, int( gridSize ), [&] ( int gridId )
+    auto keepGoung = ParallelFor( 0, int( gridSize ), [&] ( int gridId )
     {
         ICPElementId gI = ICPElementId( gridId / numGroups );
         ICPElementId gJ = ICPElementId( gridId % numGroups );
@@ -454,19 +684,16 @@ void MultiwayICP::updateLayerPairs_( ICPLayer l )
 
         if ( cascadeMode )
         {
-            auto hyperGroupI = gI / maxGroupSize_;
-            auto hyperGroupJ = gJ / maxGroupSize_;
-            if ( hyperGroupI != hyperGroupJ )
+            if ( !cascadeIndexer_->fromSameNode( l, gI, gJ ) )
                 return;
         }
 
-        // TODO: use GroupIndexer
-        auto srcFirst = ObjId( gI * groupSize );
-        auto tgtFirst = ObjId( gJ * groupSize );
-
-        MR::updateGroupPairs( pairsGridPerLayer_[l][gI][gJ], objs_, createProjector( gI, srcFirst ), createProjector( gJ, tgtFirst ), prop_.cosTreshold, prop_.distThresholdSq, prop_.mutualClosest );
-    } );
+        MR::updateGroupPairs( pairsGridPerLayer_[l][gI][gJ], objs_, createProjector( gI ), createProjector( gJ ), prop_.cosTreshold, prop_.distThresholdSq, prop_.mutualClosest );
+    }, cb );
+    if ( !keepGoung )
+        return false;
     deactivateFarDistPairs_( l );
+    return true;
 }
 
 // unified function for mean sq dist to point calculation
@@ -708,58 +935,65 @@ bool MultiwayICP::multiwayIter_( bool p2pl )
 
 bool MultiwayICP::cascadeIter_( bool p2pl /*= true */ )
 {
-    int elemetSize = 1;
     for ( ICPLayer l = 0; l < pairsGridPerLayer_.size(); ++l )
     {
         updateLayerPairs_( l );
 
         const auto& pairsOnLayer = pairsGridPerLayer_[l];
-        int numHyperGroups = ( int( pairsOnLayer.size() ) + maxGroupSize_ - 1 ) / maxGroupSize_;
+        auto numHyperGroups = cascadeIndexer_->getNumElements( l + 1 );
 
-        for ( int hgI = 0; hgI < numHyperGroups; ++hgI )
+        for ( ICPElementId hgI( 0 ); hgI < numHyperGroups; ++hgI )
         {
-            int numElements = hgI + 1 == numHyperGroups ? int( pairsOnLayer.size() ) - hgI * maxGroupSize_ : maxGroupSize_;
-            assert( numElements > 0 );
-            if ( numElements == 1 )
+            auto nodes = cascadeIndexer_->getElementNodes( l + 1, hgI );
+            assert( nodes.any() );
+            auto numNodes = nodes.count();
+            if ( numNodes == 1 )
                 continue;
 
+            int indI = 0;
             MultiwayAligningTransform mat;
-            mat.reset( numElements );
-            for ( int localElI( 0 ); localElI < numElements; ++localElI )
-            for ( int localElJ( 0 ); localElJ < numElements; ++localElJ )
+            mat.reset( int( numNodes ) );
+            for ( auto nodeI : nodes )
             {
-                if ( localElI == localElJ )
-                    continue;
-                auto elI = ICPElementId( hgI * maxGroupSize_ + localElI );
-                auto elJ = ICPElementId( hgI * maxGroupSize_ + localElJ );
-                const auto& pairs = pairsGridPerLayer_[l][elI][elJ];
-                for ( auto idx : pairs.active )
+                int indJ = 0;
+                for ( auto nodeJ : nodes )
                 {
-                    const auto& data = pairs.vec[idx];
-                    if ( p2pl )
-                        mat.add( localElI, data.srcPoint, localElJ, data.tgtPoint, ( data.tgtNorm + data.srcNorm ).normalized(), data.weight );
-                    else
-                        mat.add( localElI, data.srcPoint, localElJ, data.tgtPoint, data.weight );
+                    if ( nodeI == nodeJ )
+                    {
+                        ++indJ;
+                        continue;
+                    }
+                    const auto& pairs = pairsOnLayer[nodeI][nodeJ];
+                    for ( auto idx : pairs.active )
+                    {
+                        const auto& data = pairs.vec[idx];
+                        if ( p2pl )
+                            mat.add( indI, data.srcPoint, indJ, data.tgtPoint, ( data.tgtNorm + data.srcNorm ).normalized(), data.weight );
+                        else
+                            mat.add( indI, data.srcPoint, indJ, data.tgtPoint, data.weight );
+                    }
+                    ++indJ;
                 }
+                ++indI;
             }
 
             MultiwayAligningTransform::Stabilizer stabilizer;
-            stabilizer.rot = samplingSize_ * 1e-1f;
-            stabilizer.shift = 1e-3f;
+            stabilizer.rot = samplingSize_;
+            stabilizer.shift = 1e-2f;
             auto res = mat.solve( stabilizer );
-            for ( int localElI( 0 ); localElI < numElements; ++localElI )
+            indI = 0;
+            for ( auto nodeI : nodes )
             {
-                auto resI = res[localElI].rigidXf();
+                auto resI = res[indI].rigidXf();
                 if ( std::isnan( resI.b.x ) )
                     return false;
-                // TODO: use GroupIndexer
-                ObjId iBegin = ObjId( hgI * maxGroupSize_ * elemetSize + localElI * elemetSize );
-                ObjId iEnd = std::min( iBegin + elemetSize, ObjId( objs_.size() ) );
-                for ( ObjId i( iBegin ); i < iEnd; ++i )
-                    objs_[i].xf = AffineXf3f( resI * AffineXf3d( objs_[i].xf ) );
+                const auto& leaves = cascadeIndexer_->getElementLeaves( l, nodeI );
+                for ( auto objId : leaves )
+                    objs_[objId].xf = AffineXf3f( resI * AffineXf3d( objs_[objId].xf ) );
+
+                ++indI;
             }
         }
-        elemetSize *= maxGroupSize_;
     }
     return true;
 }

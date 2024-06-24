@@ -656,9 +656,40 @@ auto MeshDecimator::collapse_( EdgeId edgeToCollapse, const Vector3f & collapseP
     return { .v = remainingVertex };
 }
 
+static void optionalPackMesh( Mesh & mesh, const DecimateSettings & settings )
+{
+    if ( !settings.packMesh )
+        return;
+
+    MR_TIMER
+    FaceMap fmap;
+    VertMap vmap;
+    WholeEdgeMap emap;
+    mesh.pack(
+        settings.region ? &fmap : nullptr,
+        settings.vertForms ? &vmap : nullptr,
+        settings.notFlippable ? &emap : nullptr );
+
+    if ( settings.region )
+        *settings.region = settings.region->getMapping( fmap, mesh.topology.faceSize() );
+
+    if ( settings.vertForms )
+    {
+        auto & vertForms = *settings.vertForms;
+        for ( VertId oldV{ 0 }; oldV < vmap.size(); ++oldV )
+            if ( auto newV = vmap[oldV] )
+                if ( newV < oldV )
+                    vertForms[newV] = vertForms[oldV];
+        vertForms.resize( mesh.topology.vertSize() );
+    }
+
+    if ( settings.notFlippable )
+        *settings.notFlippable = settings.notFlippable->getMapping( [&emap]( UndirectedEdgeId i ) { return emap[i].undirected(); }, mesh.topology.undirectedEdgeSize() );
+}
+
 DecimateResult MeshDecimator::run()
 {
-    MR_TIMER;
+    MR_TIMER
 
     if ( settings_.bdVerts )
         pBdVerts_ = settings_.bdVerts;
@@ -766,39 +797,20 @@ DecimateResult MeshDecimator::run()
     if ( settings_.progressCallback && !settings_.progressCallback( 1.0f ) )
         return res_;
 
-    if ( settings_.packMesh )
-    {
-        FaceMap fmap;
-        VertMap vmap;
-        WholeEdgeMap emap;
-        mesh_.pack( 
-            settings_.region ? &fmap : nullptr,
-            settings_.vertForms ? &vmap : nullptr,
-            settings_.notFlippable ? &emap : nullptr );
-
-        if ( settings_.region )
-            *settings_.region = settings_.region->getMapping( fmap, mesh_.topology.faceSize() );
-
-        if ( settings_.vertForms )
-        {
-            for ( VertId oldV{ 0 }; oldV < vmap.size(); ++oldV )
-                if ( auto newV = vmap[oldV] )
-                    if ( newV < oldV )
-                        (*pVertForms_)[newV] = (*pVertForms_)[oldV];
-            pVertForms_->resize( mesh_.topology.vertSize() );
-        }
-
-        if ( settings_.notFlippable )
-            *settings_.notFlippable = settings_.notFlippable->getMapping( [&emap]( UndirectedEdgeId i ) { return emap[i].undirected(); }, mesh_.topology.undirectedEdgeSize() );
-    }
-
+    optionalPackMesh( mesh_, settings_ );
     res_.cancelled = false;
     return res_;
 }
 
 static DecimateResult decimateMeshSerial( Mesh & mesh, const DecimateSettings & settings )
 {
-    MR_TIMER;
+    MR_TIMER
+    if ( settings.maxDeletedFaces <= 0 || settings.maxDeletedVertices <= 0 )
+    {
+        DecimateResult res;
+        res.cancelled = false;
+        return res;
+    }
     MR_WRITER( mesh );
     MeshDecimator md( mesh, settings );
     return md.run();
@@ -824,6 +836,7 @@ static DecimateResult decimateMeshParallelInplace( MR::Mesh & mesh, const Decima
     MR_TIMER
     assert( settings.subdivideParts > 1 );
     const auto sz = settings.subdivideParts;
+    assert( !settings.partFaces || settings.partFaces->size() == sz );
 
     DecimateResult res;
 
@@ -846,7 +859,10 @@ static DecimateResult decimateMeshParallelInplace( MR::Mesh & mesh, const Decima
     // determine faces for each part
     ParallelFor( parts, [&]( size_t i )
     {
-        parts[i].region = getSubdividePart( mesh.topology.getValidFaces(), settings.subdivideParts, i );
+        if ( settings.partFaces )
+            parts[i].region = std::move( (*settings.partFaces)[i] );
+        else
+            parts[i].region = getSubdividePart( mesh.topology.getValidFaces(), settings.subdivideParts, i );
     } );
     if ( settings.progressCallback && !settings.progressCallback( 0.03f ) )
         return res;
@@ -933,6 +949,14 @@ static DecimateResult decimateMeshParallelInplace( MR::Mesh & mesh, const Decima
             DecimateSettings subSeqSettings = settings;
             subSeqSettings.maxDeletedVertices = settings.maxDeletedVertices / ( sz + 1 );
             subSeqSettings.maxDeletedFaces = settings.maxDeletedFaces / ( sz + 1 );
+            if ( settings.minFacesInPart > 0 )
+            {
+                int startFaces = (int)parts[i].region.count();
+                if ( startFaces > settings.minFacesInPart )
+                    subSeqSettings.maxDeletedFaces = std::min( subSeqSettings.maxDeletedFaces, startFaces - settings.minFacesInPart );
+                else
+                    subSeqSettings.maxDeletedFaces = 0;
+            }
             subSeqSettings.packMesh = false;
             subSeqSettings.vertForms = &mVertForms;
             subSeqSettings.touchBdVertices = false;
@@ -974,10 +998,32 @@ static DecimateResult decimateMeshParallelInplace( MR::Mesh & mesh, const Decima
     if ( cancelled.load( std::memory_order_relaxed ) || ( settings.progressCallback && !settings.progressCallback( 0.9f ) ) )
         return res;
 
+    if ( settings.partFaces )
+    {
+        assert( !settings.packMesh ); // otherwise, returned partFaces will contain wrong distribution of faces
+        assert( !settings.decimateBetweenParts ); // otherwise, returned partFaces will contain some deleted faces, and some faces can actually be in-between original parts
+        for ( int i = 0; i < sz; ++i )
+            (*settings.partFaces)[i] = std::move( parts[i].region );
+    }
+
     DecimateSettings seqSettings = settings;
+    for ( const auto & submesh : parts )
+    {
+        seqSettings.maxDeletedFaces -= submesh.decimRes.facesDeleted;
+        seqSettings.maxDeletedVertices -= submesh.decimRes.vertsDeleted;
+    }
     seqSettings.vertForms = &mVertForms;
     seqSettings.progressCallback = subprogress( settings.progressCallback, 0.9f, 1.0f );
-    res = decimateMeshSerial( mesh, seqSettings );
+    if ( settings.decimateBetweenParts )
+    {
+        res = decimateMeshSerial( mesh, seqSettings );
+    }
+    else
+    {
+        optionalPackMesh( mesh, seqSettings );
+        res.cancelled = false;
+    }
+
     // update res from submesh decimations
     for ( const auto & submesh : parts )
     {

@@ -17,10 +17,10 @@ if errorlevel 1 (
 
     REM Set VCPKG_BINARY_SOURCES based on the option
     if !write_s3_option! equ true (
-        set "VCPKG_BINARY_SOURCES=clear;x-aws,s3://vcpkg-export/2024.04.26/x64-windows-meshlib/,readwrite;"
+        set "VCPKG_BINARY_SOURCES=clear;x-aws,s3://vcpkg-export/2024.06.15/x64-windows-meshlib/,readwrite;"
         echo "using aws auth"
     ) else (
-        set "VCPKG_BINARY_SOURCES=clear;x-aws-config,no-sign-request;x-aws,s3://vcpkg-export/2024.04.26/x64-windows-meshlib/,readwrite;"
+        set "VCPKG_BINARY_SOURCES=clear;x-aws-config,no-sign-request;x-aws,s3://vcpkg-export/2024.06.15/x64-windows-meshlib/,readwrite;"
         echo "using no auth"
     )
 )

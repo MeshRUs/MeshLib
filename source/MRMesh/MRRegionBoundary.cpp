@@ -6,6 +6,7 @@
 #include "MRphmap.h"
 #include "MRBitSetParallelFor.h"
 #include "MRTimer.h"
+#include <algorithm>
 // test
 #include "MRMesh.h"
 #include "MRMakeSphereMesh.h"
@@ -13,11 +14,6 @@
 
 namespace MR
 {
-
-EdgeLoop trackRegionBoundaryLoop( const MeshTopology & topology, EdgeId e0, const FaceBitSet * region )
-{
-    return trackLeftBoundaryLoop( topology, e0, region );
-}
 
 EdgeLoop trackBoundaryLoop( const MeshTopology& topology, EdgeId e0, const FaceBitSet* region /*= nullptr */, bool left )
 {
@@ -46,11 +42,6 @@ EdgeLoop trackLeftBoundaryLoop( const MeshTopology& topology, EdgeId e0, const F
 EdgeLoop trackRightBoundaryLoop( const MeshTopology& topology, EdgeId e0, const FaceBitSet* region /*= nullptr */ )
 {
     return trackBoundaryLoop( topology, e0, region, false );
-}
-
-std::vector<EdgeLoop> findRegionBoundary( const MeshTopology & topology, const FaceBitSet * region )
-{
-    return findLeftBoundary( topology, region );
 }
 
 std::vector<EdgeLoop> findRegionBoundary( const MeshTopology& topology, const FaceBitSet* region /*= nullptr */, bool left )
@@ -101,6 +92,26 @@ std::vector<EdgeLoop> findRegionBoundary( const MeshTopology& topology, const Fa
 std::vector<EdgeLoop> findLeftBoundary( const MeshTopology& topology, const FaceBitSet* region /*= nullptr */ )
 {
     return findRegionBoundary( topology, region, true );
+}
+
+std::vector<EdgeLoop> delRegionKeepBd( Mesh & mesh, const FaceBitSet * region /*= nullptr */ )
+{
+    MR_TIMER
+
+    auto bds = splitOnSimpleLoops( mesh.topology, findLeftBoundary( mesh.topology, region ) );
+    UndirectedEdgeBitSet uset( mesh.topology.undirectedEdgeSize() );
+    std::vector<EdgeLoop> filteredBds;
+    filteredBds.reserve( bds.size() );
+    for ( auto & bd : bds )
+    {
+        if ( std::all_of( bd.begin(), bd.end(), [&]( EdgeId e ) { return !mesh.topology.right( e ); } ) )
+            continue; // delete boundary loops not having any single triangle outside of region
+        for ( auto e : bd )
+            uset.set( e );
+        filteredBds.push_back( std::move( bd ) );
+    }
+    mesh.deleteFaces( mesh.topology.getFaceIds( region ), &uset );
+    return filteredBds;
 }
 
 std::vector<EdgeLoop> findRightBoundary( const MeshTopology& topology, const FaceBitSet* region /*= nullptr */ )

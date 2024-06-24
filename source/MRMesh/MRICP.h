@@ -105,6 +105,9 @@ enum class ICPExitType {
     StopMsdReached // stop mean square deviation reached
 };
 
+/// returns the number of samples able to form pairs
+[[nodiscard]] inline size_t getNumSamples( const IPointPairs& pairs ) { return pairs.active.size(); }
+
 /// computes the number of active pairs
 [[nodiscard]] MRMESH_API size_t getNumActivePairs( const IPointPairs& pairs );
 
@@ -247,6 +250,9 @@ public:
     [[nodiscard]] const ICPProperties& getParams() const { return prop_; }
 
     [[nodiscard]] MRMESH_API std::string getStatusInfo() const; // returns status info string
+
+    /// computes the number of samples able to form pairs
+    [[nodiscard]] size_t getNumSamples() const { return MR::getNumSamples( flt2refPairs_ ) + MR::getNumSamples( ref2fltPairs_ ); }
 
     /// computes the number of active point pairs
     [[nodiscard]] size_t getNumActivePairs() const { return MR::getNumActivePairs( flt2refPairs_ ) + MR::getNumActivePairs( ref2fltPairs_ ); }

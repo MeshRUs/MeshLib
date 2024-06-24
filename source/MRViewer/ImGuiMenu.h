@@ -397,9 +397,13 @@ protected:
 
 // Check if menu is available and if it is, shows modal window
 MRVIEWER_API void showModal( const std::string& error, NotificationType type );
-inline  void showError( const std::string& error )
+inline void showError( const std::string& error )
 {
     showModal( error, NotificationType::Error );
 }
+
+// call if you want ImGui to take event if this key is pressed (to prevent scene reaction on key press)
+MRVIEWER_API void reserveKeyEvent( ImGuiKey key );
+
 
 } // end namespace

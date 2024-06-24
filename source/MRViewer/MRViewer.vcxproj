@@ -114,6 +114,7 @@
     <ClCompile Include="MRNameTagClickListener.cpp" />
     <ClCompile Include="MRUITestEngine.cpp" />
     <ClCompile Include="MRSpaceMouseHandler3dxMacDriver.cpp" />
+    <ClCompile Include="MRUIRectAllocator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MRAlphaSortGL.h" />
@@ -241,6 +242,7 @@
     <ClInclude Include="MRNameTagClickListener.h" />
     <ClInclude Include="MRUITestEngine.h" />
     <ClInclude Include="MRSpaceMouseHandler3dxMacDriver.h" />
+    <ClInclude Include="MRUIRectAllocator.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\MeshLib\source\.editorconfig" />

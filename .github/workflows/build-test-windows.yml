@@ -8,7 +8,7 @@ on:
         required: false
         type: boolean
       autotest_data_s3_url:
-        default: "s3://data-autotest/test_data_2023-mar-07"
+        default: "s3://data-autotest/test_data_2023-jun-14"
         required: false
         type: string
       UPLOAD_ARTIFACTS:
@@ -16,7 +16,7 @@ on:
         type: boolean
 
 env:
-  VCPKG-VERSION: '2024.04.26'
+  VCPKG-VERSION: '2024.06.15'
 
 jobs:
   windows-build-test:

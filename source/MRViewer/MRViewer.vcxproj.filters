@@ -394,6 +394,9 @@
     <ClCompile Include="MRRibbonSceneObjectsListDrawer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MRUIRectAllocator.cpp">
+      <Filter>UIStyle</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImGuiHelpers.h">
@@ -769,6 +772,9 @@
     </ClInclude>
     <ClInclude Include="MRRibbonSceneObjectsListDrawer.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MRUIRectAllocator.h">
+      <Filter>UIStyle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

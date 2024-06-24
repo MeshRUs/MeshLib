@@ -55,7 +55,8 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, MeshTopology, [] ( pybind11::module_& )
         def( "findBoundaryFaces", &MeshTopology::findBoundaryFaces, "returns all boundary faces, having at least one boundary edge" ).
         def( "findBoundaryEdges", &MeshTopology::findBoundaryEdges, "returns all boundary edges, where each edge does not have valid left face" ).
         def( "findBoundaryVerts", &MeshTopology::findBoundaryVerts, "returns all boundary vertices, incident to at least one boundary edge" ).
-        def( "deleteFaces", &MeshTopology::deleteFaces, pybind11::arg( "fs" ), "deletes multiple given faces" ).
+        def( "deleteFaces", &MeshTopology::deleteFaces, pybind11::arg( "fs" ), pybind11::arg( "keepEdges" ) = nullptr,
+            "deletes multiple given faces, also deletes adjacent edges and vertices if they were not shared by remaining faces ant not in keepFaces" ).
         def( "findHoleRepresentiveEdges", &MeshTopology::findHoleRepresentiveEdges, "returns one edge with no valid left face for every boundary in the mesh" ).
         def( "getTriVerts", ( void( MeshTopology::* )( FaceId, VertId&, VertId&, VertId& )const )& MeshTopology::getTriVerts,
             pybind11::arg("f"), pybind11::arg( "v0" ), pybind11::arg( "v1" ), pybind11::arg( "v2" ),
@@ -235,7 +236,8 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, Mesh, [] ( pybind11::module_& m )
         def( "packOptimally", &Mesh::packOptimally, pybind11::arg( "preserveAABBTree" ) = true,
             "packs tightly and rearranges vertices, triangles and edges to put close in space elements in close indices\n"
             "\tpreserveAABBTree whether to keep valid mesh's AABB tree after return (it will take longer to compute and it will occupy more memory)" ).
-        def( "deleteFaces", &Mesh::deleteFaces, pybind11::arg( "fs" ), "deletes multiple given faces" ).
+        def( "deleteFaces", &Mesh::deleteFaces, pybind11::arg( "fs" ), pybind11::arg( "keepEdges" ) = nullptr,
+            "deletes multiple given faces, also deletes adjacent edges and vertices if they were not shared by remaining faces ant not in keepFaces" ).
         def( "discreteMeanCurvature", ( float( Mesh::* )( VertId ) const ) &Mesh::discreteMeanCurvature, pybind11::arg( "v" ),
             "computes discrete mean curvature in given vertex measures in length^-1;\n"
             "0 for planar regions, positive for convex surface, negative for concave surface" ).

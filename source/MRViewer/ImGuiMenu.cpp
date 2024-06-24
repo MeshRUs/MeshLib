@@ -100,6 +100,20 @@
 #include <fmt/chrono.h>
 #endif
 
+#include <bitset>
+
+namespace
+{
+// Reserved keys block
+using OrderedKeys = std::bitset<ImGuiKey_KeysData_SIZE>;
+
+OrderedKeys& getOrderedKeys()
+{
+    static OrderedKeys orderedKeys;
+    return orderedKeys;
+}
+}
+
 namespace MR
 {
 
@@ -185,12 +199,20 @@ void ImGuiMenu::initBackend()
     ImGui_ImplOpenGL3_Init( glsl_version );
 }
 
+void reserveKeyEvent( ImGuiKey key )
+{
+    getOrderedKeys()[key] = true;
+}
+
 void ImGuiMenu::startFrame()
 {
     if ( pollEventsInPreDraw )
     {
         glfwPollEvents();
     }
+
+    // clear ordered keys
+    getOrderedKeys() = {};
 
     if ( viewer->isGLInitialized() )
     {
@@ -548,9 +570,9 @@ bool ImGuiMenu::onCharPressed_( unsigned  key, int /*modifiers*/ )
 bool ImGuiMenu::onKeyDown_( int key, int modifiers )
 {
     ImGui_ImplGlfw_KeyCallback( viewer->window, key, 0, GLFW_PRESS, modifiers );
-    if ( ImGui::GetIO().WantCaptureKeyboard )
+    
+    if ( ImGui::GetIO().WantCaptureKeyboard || getOrderedKeys()[GlfwToImGuiKey_Duplicate( key )] )
         return true;
-
     return false;
 }
 
@@ -612,7 +634,7 @@ void ImGuiMenu::draw_labels_window()
   bool visible = true;
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0,0,0,0));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-  ImGui::Begin("ViewerLabels", &visible,
+  ImGui::Begin("ViewerLabels##[rect_allocator_ignore]", &visible,
       ImGuiWindowFlags_NoTitleBar
       | ImGuiWindowFlags_NoResize
       | ImGuiWindowFlags_NoMove

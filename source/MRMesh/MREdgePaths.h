@@ -15,8 +15,11 @@ namespace MR
 /// returns true if every next edge starts where previous edge ends
 [[nodiscard]] MRMESH_API bool isEdgePath( const MeshTopology & topology, const std::vector<EdgeId> & edges );
 
-/// Same as \ref isEdgePath, but start vertex coincide with finish vertex
+/// returns true if every next edge starts where previous edge ends, and start vertex coincides with finish vertex
 [[nodiscard]] MRMESH_API bool isEdgeLoop( const MeshTopology & topology, const std::vector<EdgeId> & edges );
+
+/// given a number of edge loops, splits every loop that passes via a vertex more than once on smaller loops without self-intersections
+[[nodiscard]] MRMESH_API std::vector<EdgeLoop> splitOnSimpleLoops( const MeshTopology & topology, std::vector<EdgeLoop> && loops );
 
 /// reverses the order of edges and flips each edge orientation, thus
 /// making the opposite directed edge path

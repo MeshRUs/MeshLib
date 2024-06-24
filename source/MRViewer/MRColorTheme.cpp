@@ -38,6 +38,13 @@ EMSCRIPTEN_KEEPALIVE int emsChangeColorTheme( int theme )
     return 1;
 }
 
+
+
+EMSCRIPTEN_KEEPALIVE int emsGetColorTheme()
+{
+    using namespace MR;
+    return int( ColorTheme::getPreset() == ColorTheme::Preset::Light );
+}
 }
 #endif
 

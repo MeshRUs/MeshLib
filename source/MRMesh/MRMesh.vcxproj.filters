@@ -1275,6 +1275,33 @@
     <ClInclude Include="MRAABBTreeMaker.hpp">
       <Filter>Source Files\AABBTree</Filter>
     </ClInclude>
+    <ClInclude Include="MRLevelOfDetails.h">
+      <Filter>Source Files\Decimation</Filter>
+    </ClInclude>
+    <ClInclude Include="MRFeatureObjectImpls.h">
+      <Filter>Source Files\DataModel\Features</Filter>
+    </ClInclude>
+    <ClInclude Include="MRFeatureRefine.h">
+      <Filter>Source Files\DataModel\Features</Filter>
+    </ClInclude>
+    <ClInclude Include="MRFeatureHelpers.h">
+      <Filter>Source Files\DataModel\Features</Filter>
+    </ClInclude>
+    <ClInclude Include="MRVolumeInterpolation.h">
+      <Filter>Source Files\Voxels</Filter>
+    </ClInclude>
+    <ClInclude Include="MRFillHoleNicely.h">
+      <Filter>Source Files\MeshAlgorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="MREnums.h">
+      <Filter>Source Files\Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="MRParabola.h">
+      <Filter>Source Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="MRBestFitParabola.h">
+      <Filter>Source Files\Math</Filter>
+    </ClInclude>
     <ClInclude Include="MRSparseMatrixSolver.h" />
   </ItemGroup>
   <ItemGroup>
@@ -2123,6 +2150,21 @@
     </ClCompile>
     <ClCompile Include="MRAABBTreeObjects.cpp">
       <Filter>Source Files\AABBTree</Filter>
+    </ClCompile>
+    <ClCompile Include="MRFeatureRefine.cpp">
+      <Filter>Source Files\DataModel\Features</Filter>
+    </ClCompile>
+    <ClCompile Include="MRFeatureHelpers.cpp">
+      <Filter>Source Files\DataModel\Features</Filter>
+    </ClCompile>
+    <ClCompile Include="MRLevelOfDetails.cpp">
+      <Filter>Source Files\MeshAlgorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="MRFillHoleNicely.cpp">
+      <Filter>Source Files\MeshAlgorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="MRBestFitParabola.cpp">
+      <Filter>Source Files\Math</Filter>
     </ClCompile>
     <ClCompile Include="MRSparseMatrixSolver.cpp" />
   </ItemGroup>

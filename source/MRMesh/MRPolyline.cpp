@@ -157,6 +157,9 @@ void Polyline<V>::pack( VertMap * outVmap, WholeEdgeMap * outEmap )
     MR_TIMER
 
     Polyline<V> packed;
+    packed.points.reserve( topology.numValidVerts() );
+    packed.topology.vertReserve( topology.numValidVerts() );
+    packed.topology.edgeReserve( 2 * topology.computeNotLoneUndirectedEdges() );
     packed.addPart( *this, outVmap, outEmap );
     *this = std::move( packed );
 }

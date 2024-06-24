@@ -44,7 +44,7 @@ jobs:
 
       - name: Download Ubuntu x86-64 Release
         if: ${{ matrix.os != 'fedora:39' && matrix.platform == 'x86-64' }}
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.10
         with:
           releaseId: ${{inputs.release_id}}
           fileName: "*${{matrix.name}}-dev.deb"
@@ -60,7 +60,7 @@ jobs:
 
       - name: Download Ubuntu arm64 Release
         if: ${{ matrix.os != 'fedora:39' && matrix.platform == 'arm64' }}
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.10
         with:
           releaseId: ${{inputs.release_id}}
           fileName: "*${{matrix.name}}-arm64-dev.deb"
@@ -76,7 +76,7 @@ jobs:
 
       - name: Download Fedora Release
         if: ${{ matrix.os == 'fedora:39' }}
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.10
         with:
           releaseId: ${{inputs.release_id}}
           fileName: "*.rpm"
@@ -138,7 +138,7 @@ jobs:
           ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Download Distributive
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.10
         with:
           releaseId: ${{inputs.release_id}}
           fileName: "*x64.pkg"

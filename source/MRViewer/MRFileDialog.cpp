@@ -6,6 +6,7 @@
 #include "MRMesh/MRSystem.h"
 #include "MRPch/MRSpdlog.h"
 #include "MRPch/MRWasm.h"
+#include "MRColorTheme.h"
 #include <GLFW/glfw3.h>
 #include <clocale>
 
@@ -422,7 +423,7 @@ void openFileDialogAsync( std::function<void( const std::filesystem::path& )> ca
     std::string accumFilter = webAccumFilter( params.filters );
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"
-    EM_ASM( open_files_dialog_popup( UTF8ToString( $0 ), $1 ), accumFilter.c_str(), false );
+    EM_ASM( open_files_dialog_popup( UTF8ToString( $0 ), $1), accumFilter.c_str(), false);
 #pragma clang diagnostic pop
 #endif
 }
@@ -455,7 +456,7 @@ void openFilesDialogAsync( std::function<void( const std::vector<std::filesystem
     std::string accumFilter = webAccumFilter( params.filters );
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"
-    EM_ASM( open_files_dialog_popup( UTF8ToString( $0 ), $1 ), accumFilter.c_str(), true );
+    EM_ASM( open_files_dialog_popup( UTF8ToString( $0 ), $1), accumFilter.c_str(), true);
 #pragma clang diagnostic pop
 #endif
 }
@@ -496,7 +497,7 @@ void openFolderDialogAsync( std::function<void ( const std::filesystem::path& )>
     (void)baseFolder;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"
-    EM_ASM( open_directory_dialog_popup() );
+    EM_ASM( open_directory_dialog_popup());
 #pragma clang diagnostic pop
 #endif
 }
@@ -560,7 +561,7 @@ void saveFileDialogAsync( std::function<void( const std::filesystem::path& )> ca
     std::string accumFilter = webAccumFilter( params.filters );
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"
-    EM_ASM( download_file_dialog_popup( UTF8ToString( $0 ), UTF8ToString( $1 ) ), params.fileName.c_str(), accumFilter.c_str() );
+    EM_ASM( download_file_dialog_popup( UTF8ToString( $0 ), UTF8ToString( $1 )), params.fileName.c_str(), accumFilter.c_str() );
 #pragma clang diagnostic pop
 #endif
 }

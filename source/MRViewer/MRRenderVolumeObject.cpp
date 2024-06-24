@@ -8,6 +8,7 @@
 #include "MRMesh/MRFloatGrid.h"
 #include "MRMesh/MRMatrix4.h"
 #include "MRMesh/MRPlane3.h"
+#include "MRMesh/MRSceneSettings.h"
 #include "MRPch/MRTBB.h"
 #include "MRViewer/MRRenderDefaultObjects.h"
 
@@ -148,7 +149,8 @@ void RenderVolumeObject::render_( const ModelBaseRenderParams& renderParams, con
         GL_EXEC( glUniform3fv( glGetUniformLocation( shader, "ligthPosEye" ), 1, &nonPickerParams->lightPos.x ) );
         GL_EXEC( glUniform1f( glGetUniformLocation( shader, "specExp" ), objVoxels_->getShininess() ) );
         GL_EXEC( glUniform1f( glGetUniformLocation( shader, "specularStrength" ), objVoxels_->getSpecularStrength() ) );
-        GL_EXEC( glUniform1f( glGetUniformLocation( shader, "ambientStrength" ), objVoxels_->getAmbientStrength() ) );
+        float ambient = objVoxels_->getAmbientStrength() * ( objVoxels_->isSelected() ? SceneSettings::get( SceneSettings::FloatType::AmbientCoefSelectedObj ) : 1.0f );
+        GL_EXEC( glUniform1f( glGetUniformLocation( shader, "ambientStrength" ), ambient ) );
     }
     GL_EXEC( glUniform1i( glGetUniformLocation( shader, "useClippingPlane" ),
         objVoxels_->getVisualizeProperty( VisualizeMaskType::ClippedByPlane, renderParams.viewportId ) ) );
@@ -175,8 +177,8 @@ void RenderVolumeObject::render_( const ModelBaseRenderParams& renderParams, con
     }
 
     const auto& voxelSize = objVoxels_->vdbVolume().voxelSize;
-    const auto& minCorner = objVoxels_->getActiveBounds();
-    GL_EXEC( glUniform3f( glGetUniformLocation( shader, "minCorner" ), float( minCorner.min.x ), float( minCorner.min.y ), float( minCorner.min.z ) ) );
+    auto minCorner = Vector3f( objVoxels_->getActiveBounds().min ) - Vector3f::diagonal( 0.5f );
+    GL_EXEC( glUniform3f( glGetUniformLocation( shader, "minCorner" ), minCorner.x, minCorner.y, minCorner.z ) );
     GL_EXEC( glUniform3f( glGetUniformLocation( shader, "voxelSize" ), voxelSize.x, voxelSize.y, voxelSize.z ) );
     GL_EXEC( glUniform1f( glGetUniformLocation( shader, "step" ), std::min( { voxelSize.x, voxelSize.y, voxelSize.z } ) ) );
 

@@ -78,6 +78,8 @@ bool checkKey( ImGuiKey passedKey )
 {
     if ( passedKey == ImGuiKey_None )
         return false;
+
+    reserveKeyEvent( passedKey );
     bool pressed = false;
     if ( passedKey == ImGuiKey_Enter || passedKey == ImGuiKey_KeypadEnter )
         pressed =  ImGui::IsKeyPressed( ImGuiKey_Enter ) || ImGui::IsKeyPressed( ImGuiKey_KeypadEnter );
@@ -322,6 +324,11 @@ bool buttonIconEx(
         {
             printText = true;
             curDetail.end = startWord;
+            if ( curDetail.lenght == 0 )
+            {
+                curDetail.end = endWord;
+                curDetail.lenght += curTextSize.x;
+            }
             previosDetail = curDetail;
             curDetail = { curTextSize.x, startWord, endWord };
         }
@@ -357,12 +364,17 @@ bool buttonIconEx(
 
     assert( icon );
 
+    StyleParamHolder sh;
+    if ( !params.forceImguiTextColor )
+        sh.addColor( ImGuiCol_Text, ColorTheme::getRibbonColor( ColorTheme::RibbonColorsType::GradBtnText ) );
+
     ImVec4 multColor = ImGui::GetStyleColorVec4( ImGuiCol_Text );
+
     ImGui::Image( *icon, { iconSize.x , iconSize.y }, multColor );
     ImGui::SameLine();
 
     const auto font = ImGui::GetFont();
-    const auto color = ImGui::GetColorU32( style.Colors[ImGuiCol_Text] );
+    const ImU32 color = ImGui::GetColorU32( style.Colors[ImGuiCol_Text] );
     const auto fontSize = ImGui::GetFontSize();
 
     ImVec2 startPosText( winPos.x + ( endButtonPos.x + startButtonPosWindow.x ) / 2.0f, winPos.y + startButtonPosWindow.y );
@@ -1503,11 +1515,15 @@ bool beginTabItem( const char* label, bool* p_open, ImGuiTabItemFlags flags )
     ImGuiID itemId = ImGui::GetCurrentWindowRead()->GetID( label );
     bool active = tab_bar->VisibleTabId == itemId;
     ImGui::PushStyleColor( ImGuiCol_Text,
-        ColorTheme::getRibbonColor( active ? ColorTheme::RibbonColorsType::DialogTabActiveText :
-                                             ColorTheme::RibbonColorsType::DialogTabText ) );
+        ColorTheme::getRibbonColor( active ? ColorTheme::RibbonColorsType::DialogTabText :
+                                             ColorTheme::RibbonColorsType::TabActiveText ) );
     ImGui::PushStyleColor( ImGuiCol_TabHovered,
         ColorTheme::getRibbonColor( active ? ColorTheme::RibbonColorsType::DialogTabActiveHovered :
                                              ColorTheme::RibbonColorsType::DialogTabHovered ) );
+    ImGui::PushStyleColor( ImGuiCol_Tab,
+        ColorTheme::getRibbonColor( active ? ColorTheme::RibbonColorsType::TabActive :
+                                             ColorTheme::RibbonColorsType::Borders ) );
+
     const auto& style = ImGui::GetStyle();
     // Adjust tab size
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( style.FramePadding.x + 2, style.FramePadding.y + 4 ) );
@@ -1517,7 +1533,7 @@ bool beginTabItem( const char* label, bool* p_open, ImGuiTabItemFlags flags )
     bool result = ImGui::BeginTabItem( label, p_open, flags );
 
     ImGui::PopStyleVar( 2 );
-    ImGui::PopStyleColor( 2 );
+    ImGui::PopStyleColor( 3 );
     return result;
 }
 

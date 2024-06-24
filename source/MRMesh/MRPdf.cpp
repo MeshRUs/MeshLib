@@ -57,7 +57,7 @@ Pdf::Pdf( const std::filesystem::path& documentPath, const PdfParameters& params
         spdlog::warn( "Can't create PDF document. HPDF error code {}", HPDF_GetError( document_ ) );
         return;
     }
-
+    HPDF_SetCompressionMode( document_, HPDF_COMP_ALL );
     activePage_ = HPDF_AddPage( document_ );
     if ( !activePage_ )
     {

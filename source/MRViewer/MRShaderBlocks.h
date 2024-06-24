@@ -5,7 +5,7 @@
 namespace MR
 {
 
-MRVIEWER_API std::string getPickerFragmentShader( bool points );
+MRVIEWER_API std::string getPickerFragmentShader( bool points, bool cornerMode = true );
 
 MRVIEWER_API std::string getFragmentShaderClippingBlock();
 

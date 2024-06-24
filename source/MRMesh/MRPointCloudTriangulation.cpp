@@ -19,6 +19,7 @@
 #include "MRParallelFor.h"
 #include "MRLocalTriangulations.h"
 #include "MRMeshFixer.h"
+#include "MREdgePaths.h"
 #include <parallel_hashmap/phmap.h>
 
 namespace MR
@@ -116,7 +117,9 @@ std::optional<Mesh> PointCloudTriangulator::makeMesh_( Triangulation && t3, Tria
     mesh.deleteFaces( findHoleComplicatingFaces( mesh ) );
 
     // fill small holes
-    const auto bigLength = params_.critHoleLength >= 0.0f ? params_.critHoleLength : pointCloud_.getBoundingBox().diagonal() * 0.7f;
+    const auto maxHolePerimeterToFill = params_.critHoleLength >= 0.0f ?
+        params_.critHoleLength :
+        pointCloud_.getBoundingBox().diagonal() * 0.1f;
     auto boundaries = findRightBoundary( mesh.topology );
     // setup parameters to prevent any appearance of multiple edges during hole filling
     FillHoleParams fillHoleParams;
@@ -126,12 +129,10 @@ std::optional<Mesh> PointCloudTriangulator::makeMesh_( Triangulation && t3, Tria
     for ( int i = 0; i < boundaries.size(); ++i )
     {
         const auto& boundary = boundaries[i];
-        float length = 0.0f;
-        for ( auto e : boundary )
-            length += mesh.edgeLength( e );
 
-        if ( length < bigLength )
+        if ( (float)calcPathLength( boundary, mesh ) <= maxHolePerimeterToFill )
             fillHole( mesh, boundary.front(), fillHoleParams );
+
         if ( !reportProgress( progressCb, [&]{ return 0.3f + 0.7f * float( i + 1 ) / float( boundaries.size() ); } ) ) // 30% - 100%
             return {};
     }

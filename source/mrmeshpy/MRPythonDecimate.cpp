@@ -56,7 +56,7 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, Remesh, [] ( pybind11::module_& m )
         "Splitting the edges longer than targetEdgeLen, and then eliminating the edges shorter than targetEdgeLen." ).
     def_readwrite( "maxEdgeSplits", &MR::RemeshSettings::maxEdgeSplits, "Maximum number of edge splits allowed during subdivision" ).
     def_readwrite( "maxAngleChangeAfterFlip", &MR::RemeshSettings::maxAngleChangeAfterFlip,
-        "Improves local mesh triangulation by doing edge flips if it does change dihedral angle more than on this value" ).
+        "Improves local mesh triangulation by doing edge flips if it does not change dihedral angle more than on this value" ).
     def_readwrite( "maxBdShift", &MR::RemeshSettings::maxBdShift, "Maximal shift of a boundary during one edge collapse." ).
     def_readwrite( "useCurvature", &MR::RemeshSettings::useCurvature,
         "This option in subdivision works best for natural surfaces, where all triangles are close to equilateral,"

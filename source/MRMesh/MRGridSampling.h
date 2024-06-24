@@ -28,6 +28,8 @@ struct ModelPointsData
     const VertBitSet* validPoints{ nullptr };
     /// model world xf
     const AffineXf3f* xf{ nullptr };
+    /// if present this value will override ObjId in result ObjVertId
+    ObjId fakeObjId{};
 };
 
 struct ObjVertId

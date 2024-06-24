@@ -62,6 +62,7 @@ SceneSettings::SceneSettings()
     floatSettings_[int( FloatType::FeatureSubPointSize )] = 8;
     floatSettings_[int( FloatType::FeatureLineWidth )] = 3;
     floatSettings_[int( FloatType::FeatureSubLineWidth )] = 2;
+    floatSettings_[int( FloatType::AmbientCoefSelectedObj )] = 2.5f;
 }
 
 SceneSettings& SceneSettings::instance_()

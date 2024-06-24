@@ -231,6 +231,14 @@ template <typename T> using LineSegm3 = LineSegm<Vector3<T>>;
 using LineSegm3f = LineSegm3<float>;
 using LineSegm3d = LineSegm3<double>;
 
+template <typename T> struct Parabola;
+using Parabolaf = Parabola<float>;
+using Parabolad = Parabola<double>;
+
+template <typename T> class BestFitParabola;
+using BestFitParabolaf = BestFitParabola<float>;
+using BestFitParabolad = BestFitParabola<double>;
+
 template <typename T> class Cylinder3;
 using Cylinder3f = Cylinder3<float>;
 using Cylinder3d = Cylinder3<double>;
@@ -312,6 +320,7 @@ using IsoLines = SurfacePaths;
 using PlaneSection = SurfacePath;
 using PlaneSections = SurfacePaths;
 struct EdgePointPair;
+class Laplacian;
 
 using VertPair = std::pair<VertId, VertId>;
 using FacePair = std::pair<FaceId, FaceId>;
@@ -338,6 +347,7 @@ using FaceMap = Vector<FaceId, FaceId>;
 using VertMap = Vector<VertId, VertId>;
 using EdgeMap = Vector<EdgeId, EdgeId>;
 using UndirectedEdgeMap = Vector<UndirectedEdgeId, UndirectedEdgeId>;
+using ObjMap = Vector<ObjId, ObjId>;
 ///  mapping of whole edges: map[e]->f, map[e.sym()]->f.sym(), where only map[e] for even edges is stored
 using WholeEdgeMap = Vector<EdgeId, UndirectedEdgeId>;
 using UndirectedEdge2RegionMap = Vector<RegionId, UndirectedEdgeId>;

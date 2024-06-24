@@ -717,6 +717,30 @@ HoleFillPlan getPlanarHoleFillPlan( const Mesh& mesh, EdgeId e )
     return res;
 }
 
+bool isHoleBd( const MeshTopology & topology, const EdgeLoop & loop )
+{
+    if ( loop.empty() )
+        return false;
+
+    const EdgeId a0 = loop.front();
+    EdgeId a = a0;
+    int n = 0;
+    for (;;)
+    {
+        if ( topology.left( a ) )
+            return false;
+        a = topology.prev( a.sym() );
+        ++n;
+        if ( a == a0 )
+            break;
+        if ( n >= loop.size() )
+            return false;
+        if ( a != loop[n] )
+            return false;
+    }
+    return n == loop.size();
+}
+
 void fillHole( Mesh& mesh, EdgeId a0, const FillHoleParams& params )
 {
     MR_TIMER;

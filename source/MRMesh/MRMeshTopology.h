@@ -234,11 +234,11 @@ public:
     /// creates new face-id not associated with any edge yet
     [[nodiscard]] FaceId addFaceId() { edgePerFace_.emplace_back(); if ( updateValids_ ) { validFaces_.push_back( false ); } return edgePerFace_.backId(); }
 
-    /// deletes the face, also deletes its edges and vertices if they were not shared with other faces
-    MRMESH_API void deleteFace( FaceId f );
+    /// deletes the face, also deletes its edges and vertices if they were not shared by other faces ant not in \param keepFaces
+    MRMESH_API void deleteFace( FaceId f, const UndirectedEdgeBitSet * keepEdges = nullptr );
 
-    /// deletes multiple given faces
-    MRMESH_API void deleteFaces( const FaceBitSet& fs );
+    /// deletes multiple given faces by calling \ref deleteFace for each
+    MRMESH_API void deleteFaces( const FaceBitSet & fs, const UndirectedEdgeBitSet * keepEdges = nullptr );
 
     /// explicitly increases the size of faces vector
     MRMESH_API void faceResize( size_t newSize );

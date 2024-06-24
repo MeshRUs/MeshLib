@@ -388,8 +388,8 @@ struct [[nodiscard]] Mesh
     /// \param preserveAABBTree whether to keep valid mesh's AABB tree after return (it will take longer to compute and it will occupy more memory)
     MRMESH_API PackMapping packOptimally( bool preserveAABBTree = true );
 
-    /// deletes multiple given faces
-    MRMESH_API void deleteFaces( const FaceBitSet& fs );
+    /// deletes multiple given faces, also deletes adjacent edges and vertices if they were not shared by remaining faces ant not in \param keepFaces
+    MRMESH_API void deleteFaces( const FaceBitSet & fs, const UndirectedEdgeBitSet * keepEdges = nullptr );
 
     /// finds closest point on this mesh (or its region) to given point;
     /// xf is mesh-to-point transformation, if not specified then identity transformation is assumed

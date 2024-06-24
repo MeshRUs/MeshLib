@@ -374,10 +374,11 @@ Expected<std::vector<std::shared_ptr<MR::Object>>, std::string> loadObjectFromFi
                 if ( resValue[i].diffuseColor )
                     objectMesh->setFrontColor( *resValue[i].diffuseColor, false );
 
+                objectMesh->setUVCoords( std::move( resValue[i].uvCoords ) );
+
                 auto image = ImageLoad::fromAnySupportedFormat( resValue[i].pathToTexture );
                 if ( image.has_value() )
                 {
-                    objectMesh->setUVCoords( std::move( resValue[i].uvCoords ) );
                     objectMesh->setTexture( { image.value(), FilterType::Linear } );
                     objectMesh->setVisualizeProperty( true, MeshVisualizePropertyType::Texture, ViewportMask::all() );
                 }

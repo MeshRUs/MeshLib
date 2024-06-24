@@ -31,7 +31,7 @@ const PickedPoint& SurfacePointWidget::create( const std::shared_ptr<VisualObjec
         currentPos_ = -1;
         return currentPos_;
     }
-    return create( surface, pointOnObjectToPickedPoint( baseObject_.get(), startPos ) );
+    return create( surface, pointOnObjectToPickedPoint( surface.get(), startPos ) );
 }
 
 const PickedPoint& SurfacePointWidget::create( const std::shared_ptr<VisualObject>& surface, const PickedPoint& startPos )

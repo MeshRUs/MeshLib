@@ -106,8 +106,15 @@ std::string getMeshFragmentShaderArgumetsBlock()
 
 std::string getMeshFragmentShaderColoringBlock()
 {
-    return R"(
-    uint primitiveId = ( uint(primitiveIdf1) << 20u ) + uint(primitiveIdf0);
+    return 
+#ifdef __EMSCRIPTEN__
+        R"(
+    uint primitiveId = ( uint(primitiveIdf1) << 20u ) + uint(primitiveIdf0);)"
+#else
+        R"(
+    uint primitiveId = uint(gl_PrimitiveID);)"
+#endif
+        R"(
     vec3 normEyeCpy = normal_eye;
     if ( flatShading )
     {

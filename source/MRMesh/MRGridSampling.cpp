@@ -236,10 +236,11 @@ std::optional<std::vector<ObjVertId>> multiModelGridSampling( const Vector<Model
             continue;
         for ( auto v : *model.validPoints )
         {
+            auto useOId = model.fakeObjId ? model.fakeObjId : oId;
             if ( model.xf )
-                grid.addVertex( ( *model.xf )( ( *model.points )[v] ), v, oId );
+                grid.addVertex( ( *model.xf )( ( *model.points )[v] ), v, useOId );
             else
-                grid.addVertex( ( *model.points )[v], v, oId );
+                grid.addVertex( ( *model.points )[v], v, useOId );
         }
        
 
