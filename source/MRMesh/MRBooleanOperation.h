@@ -87,6 +87,8 @@ struct BooleanResultMapper
         bool identity{false};
     };
     std::array<Maps, size_t( MapObject::Count )> maps;
+
+    [[nodiscard]] const Maps& getMaps( MapObject index ) const { return maps[ int( index ) ]; }
 };
 
 /// Parameters will be useful if specified
@@ -96,7 +98,7 @@ struct BooleanInternalParameters
     const Mesh* originalMeshA{ nullptr };
     /// Instance of original mesh with tree for better speed
     const Mesh* originalMeshB{ nullptr };
-    /// Optional output cut edges of booleaned meshes 
+    /// Optional output cut edges of booleaned meshes
     std::vector<EdgeLoop>* optionalOutCut{ nullptr };
 };
 

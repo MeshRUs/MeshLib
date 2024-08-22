@@ -14,5 +14,5 @@ def test_delete_faces():
     assert deletedBitSet.test(mrmesh.FaceId(1))
 
     # delete_faces(...) method of builtins.PyCapsule instance
-    # delete_faces(arg0: mrmeshpy.MeshTopology, arg1: mrmeshpy.FaceBitSet) ->
+    # delete_faces(arg0: mrmesh.MeshTopology, arg1: mrmesh.FaceBitSet) ->
     # None

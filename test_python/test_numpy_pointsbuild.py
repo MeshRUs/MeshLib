@@ -3,7 +3,6 @@ import unittest as ut
 import numpy as np
 import pytest
 from helper import *
-from meshlib import mrmeshnumpy
 
 
 # mrmesh uses float32 for vertex coordinates
@@ -83,6 +82,6 @@ def test_numpy_grid_sampling():
     pc.validPoints = samples
     pc.pack()
     # All remaining points are valid now
-    
+
     # Convert back into numpy array
     pts = mrmeshnumpy.toNumpyArray(pc.points)

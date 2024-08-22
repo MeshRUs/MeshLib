@@ -4,8 +4,6 @@ import numpy as np
 import pytest
 import math
 from helper import *
-from meshlib import mrmeshpy
-from meshlib import mrmeshnumpy
 
 
 def test_voxels_conversion():
@@ -23,13 +21,13 @@ def test_voxels_conversion():
 
     # Create initial volume object
     volume0 = mrmeshnumpy.simpleVolumeFrom3Darray(np_array)
-    volume0.voxelSize = mrmeshpy.Vector3f(0.5, 1, 1)
+    volume0.voxelSize = mrmesh.Vector3f(0.5, 1, 1)
     volume0.min, volume0.max = 0.0, max_value
 
     # Test conversion functions
-    vdb_volume = mrmeshpy.simpleVolumeToVdbVolume(volume0)
-    simple_volume = mrmeshpy.vdbVolumeToSimpleVolume(vdb_volume)
-    grid = mrmeshpy.simpleVolumeToDenseGrid(simple_volume)
+    vdb_volume = mrmesh.simpleVolumeToVdbVolume(volume0)
+    simple_volume = mrmesh.vdbVolumeToSimpleVolume(vdb_volume)
+    grid = mrmesh.simpleVolumeToDenseGrid(simple_volume)
     # Basic results validation
     assert volume0.dims == vdb_volume.dims == simple_volume.dims
     assert volume0.voxelSize == vdb_volume.voxelSize == simple_volume.voxelSize
@@ -38,11 +36,11 @@ def test_voxels_conversion():
 
     # Test mesh build functions
     radius = 8 * mul
-    mesh1 = mrmeshpy.gridToMesh(vdb_volume, isoValue = max_value - radius * radius)
-    mesh2 = mrmeshpy.gridToMesh(grid, voxelSize = volume0.voxelSize, isoValue = max_value - radius * radius)
+    mesh1 = mrmesh.gridToMesh(vdb_volume, isoValue = max_value - radius * radius)
+    mesh2 = mrmesh.gridToMesh(grid, voxelSize = volume0.voxelSize, isoValue = max_value - radius * radius)
     # Basic checks
     for mesh in (mesh1, mesh2):
-        assert len(mrmeshpy.getAllComponents(mesh1)) == 1
+        assert len(mrmesh.getAllComponents(mesh1)) == 1
         assert mesh.topology.numValidFaces() + mesh.topology.numValidVerts() - \
                 mesh.topology.computeNotLoneUndirectedEdges() == 2  # Euler characteristic
     # Check by roughly comparing mesh volume to expectation (volume of 1/8 sphere)

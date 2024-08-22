@@ -5,7 +5,7 @@ def test_contour_stitch():
     """
     Stest exposing of `stitchContours` and `cutAlongEdgeLoop` functions.
     """
-    
+
     mesh = mrmesh.makeCube()
     topology = mesh.topology
     ueCntA = topology.computeNotLoneUndirectedEdges()
@@ -14,9 +14,9 @@ def test_contour_stitch():
     c0.append(mrmesh.EdgeId(0))
     c0.append(mrmesh.EdgeId(2))
     c0.append(mrmesh.EdgeId(4))
-    
+
     c1 = mrmesh.cutAlongEdgeLoop( mesh.topology, c0 )
-    
+
     ueCntB = topology.computeNotLoneUndirectedEdges()
     assert ueCntB == ueCntA + 3
 

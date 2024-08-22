@@ -41,10 +41,10 @@ COMPILER_FLAGS_LIBCLANG := $(file <$(makefile_dir)/parser_only_flags.txt)
 COMPILER := $(CXX) $(file <$(makefile_dir)/compiler_only_flags.txt) -I$(MRBIND_SOURCE)/include
 LINKER_OUTPUT := $(MODULE_OUTPUT_DIR)/mrmeshpy$(shell python3-config --extension-suffix)
 LINKER := $(CXX) -fuse-ld=lld
-LINKER_FLAGS := $(shell pkg-config --libs python3-embed) -L$(DEPS_BASE_DIR)/lib -L$(MESHLIB_SHLIB_DIR) -lMRMesh -shared $(file <$(makefile_dir)/linker_flags.txt)
+LINKER_FLAGS := -Wl,-rpath='$$ORIGIN/..:$$ORIGIN' $(shell pkg-config --libs python3-embed) -L$(DEPS_BASE_DIR)/lib -L$(MESHLIB_SHLIB_DIR) -lMRMesh -shared $(file <$(makefile_dir)/linker_flags.txt)
 NUM_FRAGMENTS := 4
 
-override mrbind_vars = \
+override mrbind_vars = $(subst $,$$$$, \
 	INPUT_DIRS=$(call quote,$(INPUT_DIRS)) \
 	INPUT_FILES_BLACKLIST=$(call quote,$(INPUT_FILES_BLACKLIST)) \
 	OUTPUT_DIR=$(call quote,$(OUTPUT_DIR)) \
@@ -56,7 +56,8 @@ override mrbind_vars = \
 	LINKER_OUTPUT=$(call quote,$(LINKER_OUTPUT)) \
 	LINKER=$(call quote,$(LINKER)) \
 	LINKER_FLAGS=$(call quote,$(LINKER_FLAGS)) \
-	NUM_FRAGMENTS=$(call quote,$(NUM_FRAGMENTS))
+	NUM_FRAGMENTS=$(call quote,$(NUM_FRAGMENTS)) \
+)
 
 # Generated mrmeshpy.
 $(LINKER_OUTPUT): | $(MODULE_OUTPUT_DIR)
@@ -75,7 +76,7 @@ $(MRMESHPY_MODULE): | $(MODULE_OUTPUT_DIR)
 		$(makefile_dir)/../../source/mrmeshnumpy/*.cpp \
 		$(COMPILER_FLAGS) \
 		-fPIC \
-		-L$(MESHLIB_SHLIB_DIR) -lMRMesh -shared \
+		$(LINKER_FLAGS) \
 		-DMRMESHNUMPY_PARENT_MODULE_NAME=$(notdir $(MODULE_OUTPUT_DIR))
 
 # All modules.

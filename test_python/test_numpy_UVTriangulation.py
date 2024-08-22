@@ -3,7 +3,6 @@ import unittest as ut
 import numpy as np
 import pytest
 from helper import *
-from meshlib import mrmeshnumpy
 
 
 # mrmesh uses float32 for vertex coordinates
