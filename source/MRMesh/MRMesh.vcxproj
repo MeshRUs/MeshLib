@@ -420,6 +420,7 @@
     <ClInclude Include="MRMacros.h" />
     <ClInclude Include="MRTeethMaskToDirectionVolume.h" />
     <ClInclude Include="MRObjectImGuiLabel.h" />
+    <ClInclude Include="MRCanonicalTypedefs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MR2DContoursTriangulation.cpp" />

@@ -6,6 +6,13 @@
 #define MR_STR(...) MR_STR_(__VA_ARGS__)
 #define MR_STR_(...) #__VA_ARGS__
 
+// Returns the argument unchanged.
+#define MR_IDENTITY(...) __VA_ARGS__
+
+// A helper for writing preprocessor loops.
+#define MR_END(...) DETAIL_MR_END(__VA_ARGS__)
+#define DETAIL_MR_END(...) __VA_ARGS__##_END
+
 
 // If the compiler supports `requires`, expands to `requires(...)`. Otherwise to nothing.
 // This is primarily useful for code that must be usable in Cuda, since everywhere else we're free to use C++20 and newer.

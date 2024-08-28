@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MRMacros.h"
+#include "MRMeshFwd.h"
 #include <type_traits>
 
 namespace MR

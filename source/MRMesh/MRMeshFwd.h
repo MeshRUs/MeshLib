@@ -2,6 +2,8 @@
 
 #include "config.h"
 
+#include "MRMesh/MRCanonicalTypedefs.h"
+
 // Not-zero _ITERATOR_DEBUG_LEVEL in Microsoft STL greatly reduces the performance of STL containers.
 //
 // Pre-build binaries from MeshLib distribution are prepared with _ITERATOR_DEBUG_LEVEL=0,
@@ -65,30 +67,29 @@ class MRMESH_CLASS RegionTag;
 class MRMESH_CLASS NodeTag;
 class MRMESH_CLASS ObjTag;
 class MRMESH_CLASS TextureTag;
+class MRMESH_CLASS GraphVertTag;
+class MRMESH_CLASS GraphEdgeTag;
 
-template <typename T> class MRMESH_CLASS Id;
-template <typename T, typename I> class MRMESH_CLASS Vector;
+MR_CANONICAL_TYPEDEFS( (template <typename T> class MRMESH_CLASS), Id,
+    ( EdgeId,           Id<EdgeTag>           )
+    ( UndirectedEdgeId, Id<UndirectedEdgeTag> )
+    ( FaceId,           Id<FaceTag>           )
+    ( VertId,           Id<VertTag>           )
+    ( PixelId,          Id<PixelTag>          )
+    ( VoxelId,          Id<VoxelTag>          )
+    ( RegionId,         Id<RegionTag>         )
+    ( NodeId,           Id<NodeTag>           )
+    ( ObjId,            Id<ObjTag>            )
+    ( TextureId,        Id<TextureTag>        )
+    ( GraphVertId,      Id<GraphVertTag>      )
+    ( GraphEdgeId,      Id<GraphEdgeTag>      )
+)
+
 template <typename T, typename I = size_t> class MRMESH_CLASS Buffer;
 struct PackMapping;
 
-using EdgeId = Id<EdgeTag>;
-using UndirectedEdgeId = Id<UndirectedEdgeTag>;
-using FaceId = Id<FaceTag>;
-using VertId = Id<VertTag>;
-using PixelId = Id<PixelTag>;
-using VoxelId = Id<VoxelTag>;
-using RegionId = Id<RegionTag>;
-using NodeId = Id<NodeTag>;
-using ObjId = Id<ObjTag>;
-using TextureId = Id<TextureTag>;
-
 class ViewportId;
 class ViewportMask;
-
-/// three vertex ids describing a triangle topology
-using ThreeVertIds = std::array<VertId, 3>;
-/// mapping from FaceId to a triple of vertex indices
-using Triangulation = Vector<ThreeVertIds, FaceId>;
 
 struct UnorientedTriangle;
 struct SomeLocalTriangulations;
@@ -98,159 +99,174 @@ using EdgePath = std::vector<EdgeId>;
 using EdgeLoop = std::vector<EdgeId>;
 
 class MRMESH_CLASS BitSet;
-template <typename T> class MRMESH_CLASS TaggedBitSet;
-template <typename T> class MRMESH_CLASS SetBitIteratorT;
+
+MR_CANONICAL_TYPEDEFS( (template <typename T> class MRMESH_CLASS), TaggedBitSet,
+    ( FaceBitSet,           TaggedBitSet<FaceTag>           )
+    ( VertBitSet,           TaggedBitSet<VertTag>           )
+    ( EdgeBitSet,           TaggedBitSet<EdgeTag>           )
+    ( UndirectedEdgeBitSet, TaggedBitSet<UndirectedEdgeTag> )
+    ( PixelBitSet,          TaggedBitSet<PixelTag>          )
+    ( VoxelBitSet,          TaggedBitSet<VoxelTag>          )
+    ( RegionBitSet,         TaggedBitSet<RegionTag>         )
+    ( NodeBitSet,           TaggedBitSet<NodeTag>           )
+    ( ObjBitSet,            TaggedBitSet<ObjTag>            )
+    ( TextureBitSet,        TaggedBitSet<TextureTag>        )
+    ( GraphVertBitSet,      TaggedBitSet<GraphVertTag>      )
+    ( GraphEdgeBitSet,      TaggedBitSet<GraphEdgeTag>      )
+)
+
+MR_CANONICAL_TYPEDEFS( (template <typename T> class MRMESH_CLASS), SetBitIteratorT,
+    ( SetBitIterator,               SetBitIteratorT<BitSet>               )
+    ( FaceSetBitIterator,           SetBitIteratorT<FaceBitSet>           )
+    ( VertSetBitIterator,           SetBitIteratorT<VertBitSet>           )
+    ( EdgeSetBitIterator,           SetBitIteratorT<EdgeBitSet>           )
+    ( UndirectedEdgeSetBitIterator, SetBitIteratorT<UndirectedEdgeBitSet> )
+)
 
 struct Color;
 
-struct MRMESH_CLASS Dipole;
-using Dipoles = Vector<Dipole, NodeId>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), MRMESH_CLASS Vector2,
+    ( Vector2b,  Vector2<bool>      )
+    ( Vector2i,  Vector2<int>       )
+    ( Vector2ll, Vector2<long long> )
+    ( Vector2f,  Vector2<float>     )
+    ( Vector2d,  Vector2<double>    )
+)
 
-using FaceBitSet = TaggedBitSet<FaceTag>;
-using VertBitSet = TaggedBitSet<VertTag>;
-using EdgeBitSet = TaggedBitSet<EdgeTag>;
-using UndirectedEdgeBitSet = TaggedBitSet<UndirectedEdgeTag>;
-using PixelBitSet = TaggedBitSet<PixelTag>;
-using VoxelBitSet = TaggedBitSet<VoxelTag>;
-using RegionBitSet = TaggedBitSet<RegionTag>;
-using NodeBitSet = TaggedBitSet<NodeTag>;
-using ObjBitSet = TaggedBitSet<ObjTag>;
-using TextureBitSet = TaggedBitSet<TextureTag>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), MRMESH_CLASS Vector3,
+    ( Vector3b,  Vector3<bool>      )
+    ( Vector3i,  Vector3<int>       )
+    ( Vector3ll, Vector3<long long> )
+    ( Vector3f,  Vector3<float>     )
+    ( Vector3d,  Vector3<double>    )
+)
 
-template <typename T> class SetBitIteratorT;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Vector4,
+    ( Vector4b,  Vector4<bool>      )
+    ( Vector4i,  Vector4<int>       )
+    ( Vector4ll, Vector4<long long> )
+    ( Vector4f,  Vector4<float>     )
+    ( Vector4d,  Vector4<double>    )
+)
 
-using SetBitIterator     = SetBitIteratorT<BitSet>;
-using FaceSetBitIterator = SetBitIteratorT<FaceBitSet>;
-using VertSetBitIterator = SetBitIteratorT<VertBitSet>;
-using EdgeSetBitIterator = SetBitIteratorT<EdgeBitSet>;
-using UndirectedEdgeSetBitIterator = SetBitIteratorT<UndirectedEdgeBitSet>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Matrix2,
+    ( Matrix2b,  Matrix2<bool>      )
+    ( Matrix2i,  Matrix2<int>       )
+    ( Matrix2ll, Matrix2<long long> )
+    ( Matrix2f,  Matrix2<float>     )
+    ( Matrix2d,  Matrix2<double>    )
+)
 
-template <typename T> struct MRMESH_CLASS Vector2;
-using Vector2b = Vector2<bool>;
-using Vector2i = Vector2<int>;
-using Vector2ll= Vector2<long long>;
-using Vector2f = Vector2<float>;
-using Vector2d = Vector2<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Matrix3,
+    ( Matrix3b,  Matrix3<bool>      )
+    ( Matrix3i,  Matrix3<int>       )
+    ( Matrix3ll, Matrix3<long long> )
+    ( Matrix3f,  Matrix3<float>     )
+    ( Matrix3d,  Matrix3<double>    )
+)
 
-template <typename T> struct MRMESH_CLASS Vector3;
-using Vector3b = Vector3<bool>;
-using Vector3i = Vector3<int>;
-using Vector3ll= Vector3<long long>;
-using Vector3f = Vector3<float>;
-using Vector3d = Vector3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Matrix4,
+    ( Matrix4b,  Matrix4<bool>      )
+    ( Matrix4i,  Matrix4<int>       )
+    ( Matrix4ll, Matrix4<long long> )
+    ( Matrix4f,  Matrix4<float>     )
+    ( Matrix4d,  Matrix4<double>    )
+)
 
-template <typename T> struct Vector4;
-using Vector4b = Vector4<bool>;
-using Vector4i = Vector4<int>;
-using Vector4ll= Vector4<long long>;
-using Vector4f = Vector4<float>;
-using Vector4d = Vector4<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), SymMatrix2,
+    ( SymMatrix2b,  SymMatrix2<bool>      )
+    ( SymMatrix2i,  SymMatrix2<int>       )
+    ( SymMatrix2ll, SymMatrix2<long long> )
+    ( SymMatrix2f,  SymMatrix2<float>     )
+    ( SymMatrix2d,  SymMatrix2<double>    )
+)
 
-template <typename T> struct Matrix2;
-using Matrix2b = Matrix2<bool>;
-using Matrix2i = Matrix2<int>;
-using Matrix2ll= Matrix2<long long>;
-using Matrix2f = Matrix2<float>;
-using Matrix2d = Matrix2<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), SymMatrix3,
+    ( SymMatrix3b,  SymMatrix3<bool>      )
+    ( SymMatrix3i,  SymMatrix3<int>       )
+    ( SymMatrix3ll, SymMatrix3<long long> )
+    ( SymMatrix3f,  SymMatrix3<float>     )
+    ( SymMatrix3d,  SymMatrix3<double>    )
+)
 
-template <typename T> struct Matrix3;
-using Matrix3b = Matrix3<bool>;
-using Matrix3i = Matrix3<int>;
-using Matrix3ll= Matrix3<long long>;
-using Matrix3f = Matrix3<float>;
-using Matrix3d = Matrix3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), SymMatrix4,
+    ( SymMatrix4b,  SymMatrix4<bool>      )
+    ( SymMatrix4i,  SymMatrix4<int>       )
+    ( SymMatrix4ll, SymMatrix4<long long> )
+    ( SymMatrix4f,  SymMatrix4<float>     )
+    ( SymMatrix4d,  SymMatrix4<double>    )
+)
 
-template <typename T> struct Matrix4;
-using Matrix4b = Matrix4<bool>;
-using Matrix4i = Matrix4<int>;
-using Matrix4ll= Matrix4<long long>;
-using Matrix4f = Matrix4<float>;
-using Matrix4d = Matrix4<double>;
-
-template <typename T> struct SymMatrix2;
-using SymMatrix2b = SymMatrix2<bool>;
-using SymMatrix2i = SymMatrix2<int>;
-using SymMatrix2ll= SymMatrix2<long long>;
-using SymMatrix2f = SymMatrix2<float>;
-using SymMatrix2d = SymMatrix2<double>;
-
-template <typename T> struct SymMatrix3;
-using SymMatrix3b = SymMatrix3<bool>;
-using SymMatrix3i = SymMatrix3<int>;
-using SymMatrix3ll= SymMatrix3<long long>;
-using SymMatrix3f = SymMatrix3<float>;
-using SymMatrix3d = SymMatrix3<double>;
-
-template <typename T> struct SymMatrix4;
-using SymMatrix4b = SymMatrix4<bool>;
-using SymMatrix4i = SymMatrix4<int>;
-using SymMatrix4ll= SymMatrix4<long long>;
-using SymMatrix4f = SymMatrix4<float>;
-using SymMatrix4d = SymMatrix4<double>;
-
-template <typename V> struct AffineXf;
+MR_CANONICAL_TYPEDEFS( (template <typename V> struct), AffineXf,
+    ( AffineXf2f, AffineXf<Vector2<float>>  )
+    ( AffineXf2d, AffineXf<Vector2<double>> )
+    ( AffineXf3f, AffineXf<Vector3<float>>  )
+    ( AffineXf3d, AffineXf<Vector3<double>> )
+)
 template <typename T> using AffineXf2 = AffineXf<Vector2<T>>;
-using AffineXf2f = AffineXf2<float>;
-using AffineXf2d = AffineXf2<double>;
-
 template <typename T> using AffineXf3 = AffineXf<Vector3<T>>;
-using AffineXf3f = AffineXf3<float>;
-using AffineXf3d = AffineXf3<double>;
 
-template <typename T> struct RigidXf3;
-using RigidXf3f = RigidXf3<float>;
-using RigidXf3d = RigidXf3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), RigidXf3,
+    ( RigidXf3f, RigidXf3<float>  )
+    ( RigidXf3d, RigidXf3<double> )
+)
 
-template <typename T> struct RigidScaleXf3;
-using RigidScaleXf3f = RigidScaleXf3<float>;
-using RigidScaleXf3d = RigidScaleXf3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), RigidScaleXf3,
+    ( RigidScaleXf3f, RigidScaleXf3<float>  )
+    ( RigidScaleXf3d, RigidScaleXf3<double> )
+)
 
 class PointToPointAligningTransform;
 class PointToPlaneAligningTransform;
 
-template <typename T> struct Sphere;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Sphere,
+    ( Sphere2f, Sphere<Vector2<float>>  )
+    ( Sphere2d, Sphere<Vector2<double>> )
+    ( Sphere3f, Sphere<Vector3<float>>  )
+    ( Sphere3d, Sphere<Vector3<double>> )
+)
 template <typename T> using Sphere2 = Sphere<Vector2<T>>;
-using Sphere2f = Sphere2<float>;
-using Sphere2d = Sphere2<double>;
-
 template <typename T> using Sphere3 = Sphere<Vector3<T>>;
-using Sphere3f = Sphere3<float>;
-using Sphere3d = Sphere3<double>;
 
-template <typename V> struct Line;
+MR_CANONICAL_TYPEDEFS( (template <typename V> struct), Line,
+    ( Line2f, Line<Vector2<float>>  )
+    ( Line2d, Line<Vector2<double>> )
+    ( Line3f, Line<Vector3<float>>  )
+    ( Line3d, Line<Vector3<double>> )
+)
 template <typename T> using Line2 = Line<Vector2<T>>;
-using Line2f = Line2<float>;
-using Line2d = Line2<double>;
-
 template <typename T> using Line3 = Line<Vector3<T>>;
-using Line3f = Line3<float>;
-using Line3d = Line3<double>;
 
-template <typename V> struct LineSegm;
+MR_CANONICAL_TYPEDEFS( (template <typename V> struct), LineSegm,
+    ( LineSegm2f, LineSegm<Vector2<float>>  )
+    ( LineSegm2d, LineSegm<Vector2<double>> )
+    ( LineSegm3f, LineSegm<Vector3<float>>  )
+    ( LineSegm3d, LineSegm<Vector3<double>> )
+)
 template <typename T> using LineSegm2 = LineSegm<Vector2<T>>;
-using LineSegm2f = LineSegm2<float>;
-using LineSegm2d = LineSegm2<double>;
-
 template <typename T> using LineSegm3 = LineSegm<Vector3<T>>;
-using LineSegm3f = LineSegm3<float>;
-using LineSegm3d = LineSegm3<double>;
 
-template <typename T> struct Parabola;
-using Parabolaf = Parabola<float>;
-using Parabolad = Parabola<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Parabola,
+    ( Parabolaf, Parabola<float>  )
+    ( Parabolad, Parabola<double> )
+)
 
-template <typename T> class BestFitParabola;
-using BestFitParabolaf = BestFitParabola<float>;
-using BestFitParabolad = BestFitParabola<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> class), BestFitParabola,
+    ( BestFitParabolaf, BestFitParabola<float>  )
+    ( BestFitParabolad, BestFitParabola<double> )
+)
 
-template <typename T> class Cylinder3;
-using Cylinder3f = Cylinder3<float>;
-using Cylinder3d = Cylinder3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> class), Cylinder3,
+    ( Cylinder3f, Cylinder3<float>  )
+    ( Cylinder3d, Cylinder3<double> )
+)
 
-template <typename T> class Cone3;
-using Cone3f = Cone3<float>;
-using Cone3d = Cone3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> class), Cone3,
+    ( Cone3f, Cone3<float>  )
+    ( Cone3d, Cone3<double> )
+)
 
+// No canonical typedefs here, because those ultimately boil to `std::vector`, which isn't under our control.
 template <typename V> using Contour = std::vector<V>;
 template <typename T> using Contour2 = Contour<Vector2<T>>;
 template <typename T> using Contour3 = Contour<Vector3<T>>;
@@ -273,37 +289,39 @@ using Contours3d = std::vector<Contour3d>;
 using Contour3f = Contour3<float>;
 using Contours3f = std::vector<Contour3f>;
 
-template <typename T> struct Plane3;
-using Plane3f = Plane3<float>;
-using Plane3d = Plane3<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Plane3,
+    ( Plane3f, Plane3<float>  )
+    ( Plane3d, Plane3<double> )
+)
 
-template <typename V> struct Box;
+MR_CANONICAL_TYPEDEFS( (template <typename V> struct), Box,
+    ( Box2i,  Box<Vector2<int>>       )
+    ( Box2ll, Box<Vector2<long long>> )
+    ( Box2f,  Box<Vector2<float>>     )
+    ( Box2d,  Box<Vector2<double>>    )
+    ( Box3i,  Box<Vector3<int>>       )
+    ( Box3ll, Box<Vector3<long long>> )
+    ( Box3f,  Box<Vector3<float>>     )
+    ( Box3d,  Box<Vector3<double>>    )
+)
 template <typename T> using Box2 = Box<Vector2<T>>;
-using Box2i = Box2<int>;
-using Box2ll = Box2<long long>;
-using Box2f = Box2<float>;
-using Box2d = Box2<double>;
-
 template <typename T> using Box3 = Box<Vector3<T>>;
-using Box3i = Box3<int>;
-using Box3ll = Box3<long long>;
-using Box3f = Box3<float>;
-using Box3d = Box3<double>;
 
-template <typename V> struct QuadraticForm;
-
+MR_CANONICAL_TYPEDEFS( (template <typename V> struct), QuadraticForm,
+    ( QuadraticForm2f, QuadraticForm<Vector2<float>>  )
+    ( QuadraticForm2d, QuadraticForm<Vector2<double>> )
+    ( QuadraticForm3f, QuadraticForm<Vector3<float>>  )
+    ( QuadraticForm3d, QuadraticForm<Vector3<double>> )
+)
 template <typename T> using QuadraticForm2 = QuadraticForm<Vector2<T>>;
-using QuadraticForm2f = QuadraticForm2<float>;
-using QuadraticForm2d = QuadraticForm2<double>;
-
 template <typename T> using QuadraticForm3 = QuadraticForm<Vector3<T>>;
-using QuadraticForm3f = QuadraticForm3<float>;
-using QuadraticForm3d = QuadraticForm3<double>;
 
-template <typename T> struct Quaternion;
-using Quaternionf = Quaternion<float>;
-using Quaterniond = Quaternion<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), Quaternion,
+    ( Quaternionf, Quaternion<float>  )
+    ( Quaterniond, Quaternion<double> )
+)
 
+// No canonical typedefs because `std::array` is not under our control.
 template <typename T> using Triangle3 = std::array<Vector3<T>, 3>;
 using Triangle3i = Triangle3<int>;
 using Triangle3f = Triangle3<float>;
@@ -311,9 +329,11 @@ using Triangle3d = Triangle3<double>;
 
 class PointAccumulator;
 
-template <typename T> struct SegmPoint;
-using SegmPointf = SegmPoint<float>;
-using SegmPointd = SegmPoint<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), SegmPoint,
+    ( SegmPointf, SegmPoint<float>  )
+    ( SegmPointd, SegmPoint<double> )
+)
+
 struct EdgePoint;
 struct EdgeSegment;
 using MeshEdgePoint = EdgePoint;
@@ -331,9 +351,11 @@ using FacePair = std::pair<FaceId, FaceId>;
 using EdgePair = std::pair<EdgeId, EdgeId>;
 using UndirectedEdgePair = std::pair<UndirectedEdgeId, UndirectedEdgeId>;
 
-template <typename T> struct TriPoint;
-using TriPointf = TriPoint<float>;
-using TriPointd = TriPoint<double>;
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), TriPoint,
+    ( TriPointf, TriPoint<float>  )
+    ( TriPointd, TriPoint<double> )
+)
+
 struct PointOnFace;
 struct PointOnObject;
 struct MeshTriPoint;
@@ -347,31 +369,45 @@ template <typename I> struct IteratorRange;
 /// \param x,y should be in range [0..1], otherwise result depends on wrap type of texture (no need to clamp it, it is done on GPU if wrap type is "Clamp" )
 using UVCoord = Vector2f;
 
-using FaceMap = Vector<FaceId, FaceId>;
-using VertMap = Vector<VertId, VertId>;
-using EdgeMap = Vector<EdgeId, EdgeId>;
-using UndirectedEdgeMap = Vector<UndirectedEdgeId, UndirectedEdgeId>;
-using ObjMap = Vector<ObjId, ObjId>;
-///  mapping of whole edges: map[e]->f, map[e.sym()]->f.sym(), where only map[e] for even edges is stored
-using WholeEdgeMap = Vector<EdgeId, UndirectedEdgeId>;
-using UndirectedEdge2RegionMap = Vector<RegionId, UndirectedEdgeId>;
-using Face2RegionMap = Vector<RegionId, FaceId>;
-using Vert2RegionMap = Vector<RegionId, VertId>;
+/// three vertex ids describing a triangle topology
+using ThreeVertIds = std::array<VertId, 3>;
 
-using VertCoords = Vector<Vector3f, VertId>;
-using VertNormals = Vector<Vector3f, VertId>;
-using VertUVCoords = Vector<UVCoord, VertId>;
-using FaceNormals = Vector<Vector3f, FaceId>;
+struct MRMESH_CLASS Dipole;
 
-using VertColors = Vector<Color, VertId>;
-using FaceColors = Vector<Color, FaceId>;
-using EdgeColors = Vector<Color, EdgeId>;
-using UndirectedEdgeColors = Vector<Color, UndirectedEdgeId>;
+MR_CANONICAL_TYPEDEFS( (template <typename T, typename I> class MRMESH_CLASS), Vector,
+    /// mapping from FaceId to a triple of vertex indices
+    ( Triangulation,  Vector<ThreeVertIds, FaceId> )
 
-using VertScalars = Vector<float, VertId>;
-using FaceScalars = Vector<float, FaceId>;
-using EdgeScalars = Vector<float, EdgeId>;
-using UndirectedEdgeScalars = Vector<float, UndirectedEdgeId>;
+    ( Dipoles,  Vector<Dipole, NodeId> )
+
+    ( FaceMap,  Vector<FaceId, FaceId> )
+    ( VertMap,  Vector<VertId, VertId> )
+    ( EdgeMap,  Vector<EdgeId, EdgeId> )
+    ( UndirectedEdgeMap,  Vector<UndirectedEdgeId, UndirectedEdgeId> )
+    ( ObjMap,  Vector<ObjId, ObjId> )
+
+    ///  mapping of whole edges: map[e]->f, map[e.sym()]->f.sym(), where only map[e] for even edges is stored
+    ( WholeEdgeMap,  Vector<EdgeId, UndirectedEdgeId> )
+    ( UndirectedEdge2RegionMap,  Vector<RegionId, UndirectedEdgeId> )
+    ( Face2RegionMap,  Vector<RegionId, FaceId> )
+    ( Vert2RegionMap,  Vector<RegionId, VertId> )
+
+    ( VertCoords,  Vector<Vector3f, VertId> )
+    ( VertNormals,  Vector<Vector3f, VertId> )
+    ( VertUVCoords,  Vector<UVCoord, VertId> )
+    ( FaceNormals,  Vector<Vector3f, FaceId> )
+
+    ( TexturePerFace,  Vector<TextureId, FaceId> )
+    ( VertColors,  Vector<Color, VertId> )
+    ( FaceColors,  Vector<Color, FaceId> )
+    ( EdgeColors,  Vector<Color, EdgeId> )
+    ( UndirectedEdgeColors,  Vector<Color, UndirectedEdgeId> )
+
+    ( VertScalars,  Vector<float, VertId> )
+    ( FaceScalars,  Vector<float, FaceId> )
+    ( EdgeScalars,  Vector<float, EdgeId> )
+    ( UndirectedEdgeScalars,  Vector<float, UndirectedEdgeId> )
+)
 
 using VertPredicate = std::function<bool( VertId )>;
 using FacePredicate = std::function<bool( FaceId )>;
@@ -391,18 +427,20 @@ using FaceMetric = std::function<float( FaceId )>;
 using EdgeMetric = std::function<float( EdgeId )>;
 using UndirectedEdgeMetric = std::function<float( UndirectedEdgeId )>;
 
-template <typename T, typename I> struct MRMESH_CLASS BMap;
-using FaceBMap = BMap<FaceId, FaceId>;
-using VertBMap = BMap<VertId, VertId>;
-using EdgeBMap = BMap<EdgeId, EdgeId>;
-using UndirectedEdgeBMap = BMap<UndirectedEdgeId, UndirectedEdgeId>;
-using WholeEdgeBMap = BMap<EdgeId, UndirectedEdgeId>;
+MR_CANONICAL_TYPEDEFS( (template <typename T, typename I> struct MRMESH_CLASS), BMap,
+    ( FaceBMap, BMap<FaceId, FaceId> )
+    ( VertBMap, BMap<VertId, VertId> )
+    ( EdgeBMap, BMap<EdgeId, EdgeId> )
+    ( UndirectedEdgeBMap, BMap<UndirectedEdgeId, UndirectedEdgeId> )
+    ( WholeEdgeBMap, BMap<EdgeId, UndirectedEdgeId> )
+)
 
 template <typename T, typename Hash = phmap::priv::hash_default_hash<T>, typename Eq = phmap::priv::hash_default_eq<T>>
 using HashSet = phmap::flat_hash_set<T, Hash, Eq>;
 template <typename T, typename Hash = phmap::priv::hash_default_hash<T>, typename Eq = phmap::priv::hash_default_eq<T>>
 using ParallelHashSet = phmap::parallel_flat_hash_set<T, Hash, Eq>;
 
+// No canonical typedefs because `phmap::...` is not under our control.
 using FaceHashSet = HashSet<FaceId>;
 using VertHashSet = HashSet<VertId>;
 using EdgeHashSet = HashSet<EdgeId>;
@@ -440,25 +478,29 @@ struct TriMesh;
 template<typename T> class UniqueThreadSafeOwner;
 
 class PolylineTopology;
-template<typename V>
-struct Polyline;
-using Polyline2 = Polyline<Vector2f>;
-using Polyline3 = Polyline<Vector3f>;
-template<typename V>
-class MRMESH_CLASS AABBTreePolyline;
-using AABBTreePolyline2 = AABBTreePolyline<Vector2f>;
-using AABBTreePolyline3 = AABBTreePolyline<Vector3f>;
+
+MR_CANONICAL_TYPEDEFS( (template<typename V> struct), Polyline,
+    ( Polyline2, Polyline<Vector2f> )
+    ( Polyline3, Polyline<Vector3f> )
+)
+
+MR_CANONICAL_TYPEDEFS( (template <typename V> class MRMESH_CLASS), AABBTreePolyline,
+    ( AABBTreePolyline2, AABBTreePolyline<Vector2f> )
+    ( AABBTreePolyline3, AABBTreePolyline<Vector3f> )
+)
 
 template<typename T> struct IntersectionPrecomputes;
 template<typename T> struct IntersectionPrecomputes2;
 
-template<typename V> struct [[nodiscard]] PolylineProjectionResult;
-using PolylineProjectionResult2 = PolylineProjectionResult<Vector2f>;
-using PolylineProjectionResult3 = PolylineProjectionResult<Vector3f>;
+MR_CANONICAL_TYPEDEFS( (template<typename V> struct [[nodiscard]]), PolylineProjectionResult,
+    ( PolylineProjectionResult2, PolylineProjectionResult<Vector2f> )
+    ( PolylineProjectionResult3, PolylineProjectionResult<Vector3f> )
+)
 
-template<typename V> struct [[nodiscard]] PolylineProjectionWithOffsetResult;
-using Polyline2ProjectionWithOffsetResult = PolylineProjectionWithOffsetResult<Vector2f>;
-using PolylineProjectionWithOffsetResult3 = PolylineProjectionWithOffsetResult<Vector3f>;
+MR_CANONICAL_TYPEDEFS( (template<typename V> struct [[nodiscard]]), PolylineProjectionWithOffsetResult,
+    ( Polyline2ProjectionWithOffsetResult, PolylineProjectionWithOffsetResult<Vector2f> )
+    ( PolylineProjectionWithOffsetResult3, PolylineProjectionWithOffsetResult<Vector3f> )
+)
 
 class DistanceMap;
 
@@ -487,27 +529,32 @@ class ConeObject;
 struct Image;
 class AnyVisualizeMaskEnum;
 
-template <typename T>
-struct VoxelsVolume;
-
-template <typename T>
-struct VoxelsVolumeMinMax;
-
-using SimpleVolume = VoxelsVolumeMinMax<std::vector<float>>;
-using SimpleVolumeU16 = VoxelsVolumeMinMax<std::vector<uint16_t>>;
-
-template <typename T>
-using VoxelValueGetter = std::function<T ( const Vector3i& )>;
-using FunctionVolume = VoxelsVolume<VoxelValueGetter<float>>;
-using FunctionVolumeU8 = VoxelsVolume<VoxelValueGetter<uint8_t>>;
-
 #ifndef MRMESH_NO_OPENVDB
 class ObjectVoxels;
 
 struct OpenVdbFloatGrid;
 using FloatGrid = std::shared_ptr<OpenVdbFloatGrid>;
-using VdbVolume = VoxelsVolumeMinMax<FloatGrid>;
+#define MRMESH_IF_HAVE_OPENVDB(...) __VA_ARGS__
+#else
+#define MRMESH_IF_HAVE_OPENVDB(...)
 #endif
+
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), VoxelsVolumeMinMax,
+    ( SimpleVolume, VoxelsVolumeMinMax<std::vector<float>> )
+    ( SimpleVolumeU16, VoxelsVolumeMinMax<std::vector<uint16_t>> )
+    MRMESH_IF_HAVE_OPENVDB(
+        ( VdbVolume, VoxelsVolumeMinMax<FloatGrid> )
+    )
+)
+
+template <typename T>
+using VoxelValueGetter = std::function<T ( const Vector3i& )>;
+
+MR_CANONICAL_TYPEDEFS( (template <typename T> struct), VoxelsVolume,
+    ( FunctionVolume, VoxelsVolume<VoxelValueGetter<float>> )
+    ( FunctionVolumeU8, VoxelsVolume<VoxelValueGetter<uint8_t>> )
+)
+
 
 class HistoryAction;
 class ChangeObjectAction;
@@ -523,23 +570,16 @@ class ChangeXfAction;
 class CombinedHistoryAction;
 class SwapRootAction;
 
-template <typename Tag>
-class MRMESH_CLASS ColorMapAggregator;
-using VertColorMapAggregator = ColorMapAggregator<VertTag>;
-using UndirEdgeColorMapAggregator = ColorMapAggregator<UndirectedEdgeTag>;
-using FaceColorMapAggregator = ColorMapAggregator<FaceTag>;
+MR_CANONICAL_TYPEDEFS( (template <typename Tag> class MRMESH_CLASS), ColorMapAggregator,
+    ( VertColorMapAggregator, ColorMapAggregator<VertTag> )
+    ( UndirEdgeColorMapAggregator, ColorMapAggregator<UndirectedEdgeTag> )
+    ( FaceColorMapAggregator, ColorMapAggregator<FaceTag> )
+)
 
 template<typename T>
 class FewSmallest;
 
 class Graph;
-class GraphVertTag;
-class GraphEdgeTag;
-using GraphVertId = Id<GraphVertTag>;
-using GraphEdgeId = Id<GraphEdgeTag>;
-using GraphVertBitSet = TaggedBitSet<GraphVertTag>;
-using GraphEdgeBitSet = TaggedBitSet<GraphEdgeTag>;
-
 class WatershedGraph;
 
 /// Argument value - progress in [0,1];

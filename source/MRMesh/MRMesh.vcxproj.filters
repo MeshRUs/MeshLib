@@ -2237,6 +2237,9 @@
     <ClCompile Include="MRObjectImGuiLabel.cpp">
       <Filter>Source Files\DataModel</Filter>
     </ClCompile>
+    <ClCompile Include="MRCanonicalTypedefs.h">
+      <Filter>Source Files\Basic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
