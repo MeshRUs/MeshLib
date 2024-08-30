@@ -14,9 +14,9 @@ def createTestMesh() -> mrmesh.Mesh:
     for v in triangulation.vec[0]:
         assert v.get() == i
         i = i + 1
-    triangulation.vec[1] = mrmesh.ThreeVertIds(
+    triangulation.vec[1] = mrmesh.ThreeVertIds([
         mrmesh.VertId(0), mrmesh.VertId(2), mrmesh.VertId(3)
-    )
+    ])
 
     mesh = mrmesh.Mesh()
     mesh.points.vec.resize(4)

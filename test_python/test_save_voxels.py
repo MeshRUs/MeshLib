@@ -15,6 +15,7 @@ def test_save_voxels():
     voxels = mrmesh.meshToVolume(mesh, mtvParams)
 
     vsParams = mrmesh.VoxelsSaveSavingSettings()
+    shutil.rmtree("save_voxels_dir_test", ignore_errors=True) # Remove existing directory, if any. Otherwise `mkdir()` fails.
     os.mkdir("save_voxels_dir_test")
     vsParams.path = "save_voxels_dir_test"
     vsParams.slicePlane = mrmesh.SlicePlane.XY

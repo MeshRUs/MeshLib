@@ -6,7 +6,7 @@ def test_save_load_mesh():
     torus = mrmesh.makeTorus(2, 1, 10, 10, None)
     fs = open("test_save_load_mesh.mrmesh", "wb")
     try:
-        mrmesh.saveMesh(torus, "*.mrmesh", fs)
+        mrmesh.saveMesh(torus, fs, "*.mrmesh")
     except ValueError as e:
         print(e)
         assert False

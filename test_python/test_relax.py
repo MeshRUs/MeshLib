@@ -77,3 +77,5 @@ def test_relax_inside():
     params.region = region
     res = mrmesh.relaxApprox(torus, params)
     assert( res )
+
+test_relax_inside()

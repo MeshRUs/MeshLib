@@ -29,12 +29,16 @@ if bool(os.environ.get('USE_MESHLIB2_PY', 0)):
     mrmesh.MeshToVolumeParamsType = mrmesh.MeshToVolumeParams_Type
     mrmesh.VoxelsSaveSavingSettings = mrmesh.VoxelsSave_SavingSettings
     mrmesh.saveMesh = mrmesh.MeshSave_toAnySupportedFormat # There was also a manually written overload, hmm.
+    mrmesh.loadMesh = mrmesh.MeshLoad_fromAnySupportedFormat
     mrmesh.saveSliceToImage = mrmesh.VoxelsSave_saveSliceToImage
+    mrmesh.saveAllSlicesToImage = mrmesh.VoxelsSave_saveAllSlicesToImage
     mrmesh.LaplacianEdgeWeightsParam = mrmesh.EdgeWeights
     mrmesh.getAllComponents = mrmesh.MeshComponents_getAllComponents
     mrmesh.MeshBuilderSettings = mrmesh.MeshBuilder_BuildSettings
     mrmesh.findUndercuts = mrmesh.FixUndercuts_findUndercuts
     mrmesh.fixUndercuts = mrmesh.FixUndercuts_fixUndercuts
+    mrmesh.topologyFromTriangles = mrmesh.MeshBuilder_fromTriangles
+    mrmesh.uniteCloseVertices = mrmesh.MeshBuilder_uniteCloseVertices
 else:
     import meshlib.mrmeshpy as mrmesh
     import meshlib.mrmeshnumpy as mrmeshnumpy

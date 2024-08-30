@@ -35,30 +35,27 @@ struct AffineXf
     [[nodiscard]] constexpr V linearOnly( const V & x ) const noexcept { return A * x; }
     /// computes inverse transformation
     [[nodiscard]] constexpr AffineXf inverse() const noexcept MR_REQUIRES_IF_SUPPORTED( !std::is_integral_v<T> );
+
+    /// composition of two transformations:
+    /// \f( y = (u * v) ( x ) = u( v( x ) ) = ( u.A * ( v.A * x + v.b ) + u.b ) = ( u.A * v.A ) * x + ( u.A * v.b + u.b ) \f)
+    friend AffineXf<V> operator * ( const AffineXf<V> & u, const AffineXf<V> & v )
+        { return { u.A * v.A, u.A * v.b + u.b }; }
+
+    ///
+    friend bool operator == ( const AffineXf<V> & a, const AffineXf<V> & b )
+    {
+        return a.A == b.A && a.b == b.b;
+    }
+
+    ///
+    friend bool operator != ( const AffineXf<V> & a, const AffineXf<V> & b )
+    {
+        return !( a == b );
+    }
 };
 
 /// \related AffineXf
 /// \{
-
-/// composition of two transformations:
-/// \f( y = (u * v) ( x ) = u( v( x ) ) = ( u.A * ( v.A * x + v.b ) + u.b ) = ( u.A * v.A ) * x + ( u.A * v.b + u.b ) \f)
-template <typename V>
-inline AffineXf<V> operator * ( const AffineXf<V> & u, const AffineXf<V> & v )
-    { return { u.A * v.A, u.A * v.b + u.b }; }
-
-///
-template <typename V>
-inline bool operator == ( const AffineXf<V> & a, const AffineXf<V> & b )
-{
-    return a.A == b.A && a.b == b.b;
-}
-
-///
-template <typename V>
-inline bool operator != ( const AffineXf<V> & a, const AffineXf<V> & b )
-{
-    return !( a == b );
-}
 
 template <typename V>
 inline constexpr AffineXf<V> AffineXf<V>::inverse() const noexcept MR_REQUIRES_IF_SUPPORTED( !std::is_integral_v<T> )
