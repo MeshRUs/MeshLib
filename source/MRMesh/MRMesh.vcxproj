@@ -419,7 +419,6 @@
     <ClInclude Include="MRMacros.h" />
     <ClInclude Include="MRTeethMaskToDirectionVolume.h" />
     <ClInclude Include="MRCanonicalTypedefs.h" />
-    <ClInclude Include="MRBindingMacros.h" />
     <ClInclude Include="MRProjectionMeshAttribute.h" />
     <ClInclude Include="MRUniqueTemporaryFolder.h" />
     <ClInclude Include="MROnInit.h" />

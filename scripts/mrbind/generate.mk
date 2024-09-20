@@ -154,7 +154,7 @@ $(info Using Python module suffix: $(PYTHON_MODULE_SUFFIX))
 MODULE_OUTPUT_DIR := $(MESHLIB_SHLIB_DIR)/meshlib2
 
 # Those variables are for mrbind/scripts/apply_to_files.mk
-INPUT_DIRS := $(addprefix $(makefile_dir)/../../source/,MRMesh MRSymbolMesh) $(makefile_dir)
+INPUT_DIRS := $(addprefix $(makefile_dir)/../../source/,MRMesh MRSymbolMesh) $(makefile_dir)/extra_headers
 INPUT_FILES_BLACKLIST := $(call load_file,$(makefile_dir)/input_file_blacklist.txt)
 ifneq ($(IS_WINDOWS),)
 OUTPUT_DIR := source/TempOutput/PythonBindings/x64/$(VS_MODE)
@@ -167,7 +167,7 @@ MRBIND_FLAGS := $(call load_file,$(makefile_dir)/mrbind_flags.txt)
 MRBIND_FLAGS_FOR_EXTRA_INPUTS := $(call load_file,$(makefile_dir)/mrbind_flags_for_helpers.txt)
 COMPILER_FLAGS := $(EXTRA_CFLAGS) $(call load_file,$(makefile_dir)/common_compiler_parser_flags.txt) $(PYTHON_CFLAGS) -I. -I$(DEPS_INCLUDE_DIR) -I$(makefile_dir)/../../source
 COMPILER_FLAGS_LIBCLANG := $(call load_file,$(makefile_dir)/parser_only_flags.txt)
-COMPILER := $(CXX) $(subst $(lf), ,$(call load_file,$(makefile_dir)/compiler_only_flags.txt)) -I$(MRBIND_SOURCE)/include
+COMPILER := $(CXX) $(subst $(lf), ,$(call load_file,$(makefile_dir)/compiler_only_flags.txt)) -I$(MRBIND_SOURCE)/include -I$(makefile_dir)
 LINKER_OUTPUT := $(MODULE_OUTPUT_DIR)/mrmeshpy$(PYTHON_MODULE_SUFFIX)
 LINKER := $(CXX) -fuse-ld=lld
 LINKER_FLAGS := $(EXTRA_LDFLAGS) -L$(DEPS_LIB_DIR) $(PYTHON_LDFLAGS) -L$(MESHLIB_SHLIB_DIR) -lMRMesh -lMRSymbolMesh -shared $(call load_file,$(makefile_dir)/linker_flags.txt)

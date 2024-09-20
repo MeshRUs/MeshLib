@@ -29,6 +29,7 @@
     <ClInclude Include="MRTBB.h" />
     <ClInclude Include="MRSpdlog.h" />
     <ClInclude Include="MRSuppressWarning.h" />
+    <ClInclude Include="MRBindingMacros.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

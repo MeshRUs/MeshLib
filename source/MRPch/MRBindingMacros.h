@@ -5,6 +5,8 @@
 // MR_PARSING_FOR_PB11_BINDINGS - gets defined when parsing the source code
 // MR_COMPILING_PB11_BINDINGS - gets defined when compiling the resulting bindings
 
+#ifdef MR_PARSING_FOR_PB11_BINDINGS
+
 // Use to specify valid template arguments for templates (usually function templates).
 // For example:
 //   template <typename T> void foo(T) {...};
@@ -13,8 +15,12 @@
 //
 // As with `extern template`, you might need to use `foo<...>` instead of `foo` if the template parameters can't be deduced from the
 // parameter types and the return type.
-#ifdef MR_PARSING_FOR_PB11_BINDINGS
 #define MR_BIND_TEMPLATE(...) extern template __VA_ARGS__;
+
+// Mark a declaration with this to avoid generating a binding for it.
+#define MR_BIND_IGNORE __attribute__((__annotate__("mrbind::ignore")))
+
 #else
 #define MR_BIND_TEMPLATE(...)
+#define MR_BIND_IGNORE
 #endif

@@ -1,7 +1,7 @@
 -Wno-deprecated-declarations
 -Wno-implicitly-unsigned-literal
 -DMR_COMPILING_PB11_BINDINGS
--DMRBIND_HEADER='<mrbind/targets/pybind11.h>'
+-DMRBIND_HEADER='"mrbind_target_pybind11.h"'
 -DMB_PB11_MODULE_NAME=mrmeshpy
 -DMB_PB11_ADJUST_NAMES='"s/\\bMR::Extra:://g;s/\\bMR:://g"'
 -DMB_PB11_ENABLE_CXX_STYLE_CONTAINER_METHODS

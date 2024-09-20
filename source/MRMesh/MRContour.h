@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MRBindingMacros.h"
+#include "MRPch/MRBindingMacros.h"
 #include "MRMeshFwd.h"
 #include "MRVector3.h"
 

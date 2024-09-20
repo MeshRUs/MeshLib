@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MRMeshFwd.h"
+#include "MRPch/MRBindingMacros.h"
 
 #include <version>
 #if __cpp_lib_expected >= 202211
@@ -38,7 +39,7 @@ template<class T, class E = std::string>
 using Expected = std::expected<T, E>;
 
 template <class E>
-inline auto unexpected( E &&e )
+MR_BIND_IGNORE inline auto unexpected( E &&e )
 {
     return std::unexpected( std::forward<E>( e ) );
 }
@@ -49,7 +50,7 @@ template<class T, class E = std::string>
 using Expected = tl::expected<T, E>;
 
 template <class E>
-inline auto unexpected( E &&e )
+MR_BIND_IGNORE inline auto unexpected( E &&e )
 {
     return tl::make_unexpected( std::forward<E>( e ) );
 }
@@ -60,13 +61,13 @@ inline auto unexpected( E &&e )
 using VoidOrErrStr = Expected<void>;
 
 /// Common operation canceled line for all
-inline std::string stringOperationCanceled()
+MR_BIND_IGNORE inline std::string stringOperationCanceled()
 {
     return "Operation was canceled";
 }
 
 /// Returns Expected error with `stringOperationCanceled()`
-inline auto unexpectedOperationCanceled()
+MR_BIND_IGNORE inline auto unexpectedOperationCanceled()
 {
     return MR::unexpected(stringOperationCanceled());
 }

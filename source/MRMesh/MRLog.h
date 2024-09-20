@@ -2,6 +2,7 @@
 
 #include "MRMeshFwd.h"
 #include "MRPch/MRSpdlog.h"
+#include "MRPch/MRBindingMacros.h"
 #include <filesystem>
 
 namespace MR
@@ -11,11 +12,11 @@ namespace MR
 /// \{
 
 /// Make default spd logger
-class Logger
+class MR_BIND_IGNORE Logger
 {
 public:
     MRMESH_API static Logger& instance();
-    
+
     /// store this pointer if need to prolong logger life time (necessary to log something from destructors)
     MRMESH_API const std::shared_ptr<spdlog::logger>& getSpdLogger() const;
 
