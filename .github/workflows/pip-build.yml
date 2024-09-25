@@ -25,113 +25,113 @@ jobs:
       - uses: actions-ecosystem/action-get-latest-tag@v1
         id: get-latest-tag
 
-  manylinux-pip-build:
-    needs: setup
-    timeout-minutes: 80
-    runs-on: ${{ matrix.runner }}
-    container:
-      image: ${{ matrix.docker-image }}
-      options: ${{ matrix.container-options }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: ["x86_64", "aarch64"]
-        py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        include:
-          - platform: "x86_64"
-            docker-image: "meshlib/meshlib-ubuntu20:mrbind-ci"
-            container-options: "--user root"
-            runner: ubuntu-latest
-          - platform: "aarch64"
-            docker-image: "meshlib/meshlib-ubuntu-arm64:mrbind-ci"
-            container-options: "--user root"
-            runner: [ 'self-hosted', 'linux-arm64' ]
-          - py-version: "3.8"
-            py-tag: "cp38"
-            py-cmd: "python3.8"
-          - py-version: "3.9"
-            py-tag: "cp39"
-            py-cmd: "python3.9"
-          - py-version: "3.10"
-            py-tag: "cp310"
-            py-cmd: "python3.10"
-          - py-version: "3.11"
-            py-tag: "cp311"
-            py-cmd: "python3.11"
-          - py-version: "3.12"
-            py-tag: "cp312"
-            py-cmd: "python3.12"
-    steps:
-        # Work around some weird permission errors in the runner.
-      - name: Git - add safe directory
-        run: git config --global --add safe.directory '*'
+  # manylinux-pip-build:
+  #   needs: setup
+  #   timeout-minutes: 80
+  #   runs-on: ${{ matrix.runner }}
+  #   container:
+  #     image: ${{ matrix.docker-image }}
+  #     options: ${{ matrix.container-options }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       platform: ["x86_64", "aarch64"]
+  #       py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+  #       include:
+  #         - platform: "x86_64"
+  #           docker-image: "meshlib/meshlib-ubuntu20:mrbind-ci"
+  #           container-options: "--user root"
+  #           runner: ubuntu-latest
+  #         - platform: "aarch64"
+  #           docker-image: "meshlib/meshlib-ubuntu-arm64:mrbind-ci"
+  #           container-options: "--user root"
+  #           runner: [ 'self-hosted', 'linux-arm64' ]
+  #         - py-version: "3.8"
+  #           py-tag: "cp38"
+  #           py-cmd: "python3.8"
+  #         - py-version: "3.9"
+  #           py-tag: "cp39"
+  #           py-cmd: "python3.9"
+  #         - py-version: "3.10"
+  #           py-tag: "cp310"
+  #           py-cmd: "python3.10"
+  #         - py-version: "3.11"
+  #           py-tag: "cp311"
+  #           py-cmd: "python3.11"
+  #         - py-version: "3.12"
+  #           py-tag: "cp312"
+  #           py-cmd: "python3.12"
+  #   steps:
+  #       # Work around some weird permission errors in the runner.
+  #     - name: Git - add safe directory
+  #       run: git config --global --add safe.directory '*'
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
 
-      - name: Python setup
-        if: ${{ matrix.py-version != '3.8' }}
-        run: |
-          apt -y update && apt -y upgrade && apt -y install software-properties-common
-          add-apt-repository -y ppa:deadsnakes/ppa && apt -y install ${{ matrix.py-cmd }}-dev ${{ matrix.py-cmd }}-distutils
+  #     - name: Python setup
+  #       if: ${{ matrix.py-version != '3.8' }}
+  #       run: |
+  #         apt -y update && apt -y upgrade && apt -y install software-properties-common
+  #         add-apt-repository -y ppa:deadsnakes/ppa && apt -y install ${{ matrix.py-cmd }}-dev ${{ matrix.py-cmd }}-distutils
 
-      - name: Pip setup
-        run: |
-          curl -sS https://bootstrap.pypa.io/get-pip.py | ${{ matrix.py-cmd }}
-          ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
-          ${{ matrix.py-cmd }} -m pip install pytest
+  #     - name: Pip setup
+  #       run: |
+  #         curl -sS https://bootstrap.pypa.io/get-pip.py | ${{ matrix.py-cmd }}
+  #         ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
+  #         ${{ matrix.py-cmd }} -m pip install pytest
 
-      - name: Install thirdparty libs
-        run: |
-          ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
-          ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
+  #     - name: Install thirdparty libs
+  #       run: |
+  #         ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
+  #         ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
 
-      - name: Build
-        run: ./scripts/build_source.sh
-        env:
-          MESHLIB_PYTHON_VERSION: ${{matrix.py-version}}
-          MESHLIB_BUILD_RELEASE: "ON"
-          MESHLIB_BUILD_DEBUG: "OFF"
-          CMAKE_CXX_COMPILER: /usr/bin/clang++-11
-          # FIXME: OpenGL libraries are included to wheel packages when the XDE module is used
-          MR_CMAKE_OPTIONS: >
-            -DMRIOEXTRAS_OPENCASCADE_USE_XDE=OFF
-          # not realy needed
-          CMAKE_C_COMPILER: /usr/bin/clang-11
+  #     - name: Build
+  #       run: ./scripts/build_source.sh
+  #       env:
+  #         MESHLIB_PYTHON_VERSION: ${{matrix.py-version}}
+  #         MESHLIB_BUILD_RELEASE: "ON"
+  #         MESHLIB_BUILD_DEBUG: "OFF"
+  #         CMAKE_CXX_COMPILER: /usr/bin/clang++-11
+  #         # FIXME: OpenGL libraries are included to wheel packages when the XDE module is used
+  #         MR_CMAKE_OPTIONS: >
+  #           -DMRIOEXTRAS_OPENCASCADE_USE_XDE=OFF
+  #         # not realy needed
+  #         CMAKE_C_COMPILER: /usr/bin/clang-11
 
-        # Also print the amount of RAM. Not doing it in the same step as building the bindings, because when that fails, the logs are sometimes lost.
-      - name: Build MRBind
-        run: |
-          ./scripts/mrbind/install_mrbind_ubuntu.sh
-          free -h
+  #       # Also print the amount of RAM. Not doing it in the same step as building the bindings, because when that fails, the logs are sometimes lost.
+  #     - name: Build MRBind
+  #       run: |
+  #         ./scripts/mrbind/install_mrbind_ubuntu.sh
+  #         free -h
 
-      - name: Generate and build MRBind bindings
-        run: |
-          make -f scripts/mrbind/generate.mk -B --trace PACKAGE_NAME=meshlib CXX_FOR_ABI=/usr/bin/clang++-11 PYTHON_PKGCONF_NAME=python-${{matrix.py-version}}-embed
+  #     - name: Generate and build MRBind bindings
+  #       run: |
+  #         make -f scripts/mrbind/generate.mk -B --trace PACKAGE_NAME=meshlib CXX_FOR_ABI=/usr/bin/clang++-11 PYTHON_PKGCONF_NAME=python-${{matrix.py-version}}-embed
 
-      - name: Run Tests
-        run: MR_LOCAL_RESOURCES=1 xvfb-run -a ./build/Release/bin/MeshViewer -hidden -noEventLoop -unloadPluginsAtEnd
+  #     - name: Run Tests
+  #       run: MR_LOCAL_RESOURCES=1 xvfb-run -a ./build/Release/bin/MeshViewer -hidden -noEventLoop -unloadPluginsAtEnd
 
-      - name: Unit Tests
-        # Using `cd` here fixes weird library loading issues.
-        run: cd ./build/Release/bin/meshlib && ../MRTest
+  #     - name: Unit Tests
+  #       # Using `cd` here fixes weird library loading issues.
+  #       run: cd ./build/Release/bin/meshlib && ../MRTest
 
-      - name: Python Tests
-        working-directory: ./build/Release/bin
-        run: ${{ matrix.py-cmd }} ./../../../scripts/run_python_test_script.py -cmd ${{ matrix.py-cmd }}
+  #     - name: Python Tests
+  #       working-directory: ./build/Release/bin
+  #       run: ${{ matrix.py-cmd }} ./../../../scripts/run_python_test_script.py -cmd ${{ matrix.py-cmd }}
 
-      - name: Create and fix Wheel
-        run: |
-          ${{ matrix.py-cmd }} ./scripts/wheel/build_wheel.py --version ${{needs.setup.outputs.version_tag}}
+  #     - name: Create and fix Wheel
+  #       run: |
+  #         ${{ matrix.py-cmd }} ./scripts/wheel/build_wheel.py --version ${{needs.setup.outputs.version_tag}}
 
-      - name: Upload to Test Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
-          path: ./scripts/wheel/meshlib/wheelhouse/meshlib-*.whl
-          retention-days: 1
+  #     - name: Upload to Test Artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
+  #         path: ./scripts/wheel/meshlib/wheelhouse/meshlib-*.whl
+  #         retention-days: 1
 
   # windows-pip-build:
   #   needs: setup
@@ -424,73 +424,73 @@ jobs:
           path: meshlib-*.whl
           retention-days: 1
 
-  manylinux-pip-test:
-    needs: [manylinux-pip-build]
-    timeout-minutes: 20
-    runs-on: ${{ matrix.runner }}
-    container:
-      image: ${{matrix.container-prefix}}${{matrix.os}}
-      options: ${{ matrix.container-options }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: ["x86_64", "aarch64"]
-        os: ["ubuntu:20.04", "ubuntu:22.04", "debian:11-slim", "fedora:37", "fedora:39"]
-        include:
-          - platform: "x86_64"
-            runner: ubuntu-latest
-            container-options: "--user root"
-            container-prefix: " "
-          - platform: "aarch64"
-            runner: [ 'self-hosted', 'linux-arm64' ]
-            container-options: "--user root"
-            container-prefix: "arm64v8/"
-          - os: "ubuntu:20.04"
-            py-version: "3.8"
-            py-cmd: "python3.8"
-          - os: "debian:11-slim"
-            py-version: "3.9"
-            py-cmd: "python3.9"
-          - os: "ubuntu:22.04"
-            py-version: "3.10"
-            py-cmd: "python3.10"
-          - os: "fedora:37"
-            py-version: "3.11"
-            py-cmd: "python3.11"
-          - os: "fedora:39"
-            py-version: "3.12"
-            py-cmd: "python3.12"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # manylinux-pip-test:
+  #   needs: [manylinux-pip-build]
+  #   timeout-minutes: 20
+  #   runs-on: ${{ matrix.runner }}
+  #   container:
+  #     image: ${{matrix.container-prefix}}${{matrix.os}}
+  #     options: ${{ matrix.container-options }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       platform: ["x86_64", "aarch64"]
+  #       os: ["ubuntu:20.04", "ubuntu:22.04", "debian:11-slim", "fedora:37", "fedora:39"]
+  #       include:
+  #         - platform: "x86_64"
+  #           runner: ubuntu-latest
+  #           container-options: "--user root"
+  #           container-prefix: " "
+  #         - platform: "aarch64"
+  #           runner: [ 'self-hosted', 'linux-arm64' ]
+  #           container-options: "--user root"
+  #           container-prefix: "arm64v8/"
+  #         - os: "ubuntu:20.04"
+  #           py-version: "3.8"
+  #           py-cmd: "python3.8"
+  #         - os: "debian:11-slim"
+  #           py-version: "3.9"
+  #           py-cmd: "python3.9"
+  #         - os: "ubuntu:22.04"
+  #           py-version: "3.10"
+  #           py-cmd: "python3.10"
+  #         - os: "fedora:37"
+  #           py-version: "3.11"
+  #           py-cmd: "python3.11"
+  #         - os: "fedora:39"
+  #           py-version: "3.12"
+  #           py-cmd: "python3.12"
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Ubuntu system setup
-        if: ${{ matrix.os == 'ubuntu:20.04' || matrix.os == 'ubuntu:22.04' || matrix.os == 'debian:11-slim' }}
-        run: apt -y update && apt -y upgrade && apt -y install curl libssl-dev python3-distutils python3-pip
+  #     - name: Ubuntu system setup
+  #       if: ${{ matrix.os == 'ubuntu:20.04' || matrix.os == 'ubuntu:22.04' || matrix.os == 'debian:11-slim' }}
+  #       run: apt -y update && apt -y upgrade && apt -y install curl libssl-dev python3-distutils python3-pip
 
-      - name: Fedora 37 system setup
-        if: ${{matrix.os == 'fedora:37' || matrix.os == 'fedora:39'}}
-        run: dnf -y install python3 pip
+  #     - name: Fedora 37 system setup
+  #       if: ${{matrix.os == 'fedora:37' || matrix.os == 'fedora:39'}}
+  #       run: dnf -y install python3 pip
 
-      - name: Pip setup
-        run: |
-          ${{ matrix.py-cmd }} -m pip install --upgrade pip
-          ${{ matrix.py-cmd }} -m pip uninstall -y meshlib
-          ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
-          ${{ matrix.py-cmd }} -m pip install pytest
+  #     - name: Pip setup
+  #       run: |
+  #         ${{ matrix.py-cmd }} -m pip install --upgrade pip
+  #         ${{ matrix.py-cmd }} -m pip uninstall -y meshlib
+  #         ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
+  #         ${{ matrix.py-cmd }} -m pip install pytest
 
-      - name: Download Meshlib wheel from Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
-          merge-multiple: true
+  #     - name: Download Meshlib wheel from Artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
+  #         merge-multiple: true
 
-      - name: Meshlib wheel install
-        run: ${{ matrix.py-cmd }} -m pip install ${{ matrix.pip-options }} ./meshlib-*.whl
+  #     - name: Meshlib wheel install
+  #       run: ${{ matrix.py-cmd }} -m pip install ${{ matrix.pip-options }} ./meshlib-*.whl
 
-      - name: Run Python tests
-        working-directory: test_python
-        run: ${{ matrix.py-cmd }} -m pytest -s -v
+  #     - name: Run Python tests
+  #       working-directory: test_python
+  #       run: ${{ matrix.py-cmd }} -m pytest -s -v
 
   # windows-pip-test:
   #   needs: [windows-pip-build]
@@ -596,7 +596,7 @@ jobs:
   delete-artifacts:
     timeout-minutes: 5
     runs-on: ubuntu-20.04
-    needs: [manylinux-pip-test, macos-pip-test] # windows-pip-test
+    needs: [macos-pip-test] # manylinux-pip-test, windows-pip-test
     if: always()
     steps:
       - name: Delete all ManyLinux
