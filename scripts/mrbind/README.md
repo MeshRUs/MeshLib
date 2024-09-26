@@ -155,6 +155,6 @@ You can find some undocumented flags/variables in `generate.mk`.
 
 * **Importing the wheel segfaults on MacOS**
 
-  * Make sure you're not linking against Python **and** do use `-Xlinker -undefined -Xlinker dynamic_lookup` linker flags. Failure to do this will cause a segfault when importing the wheel, but not when importing the module without it. The `generate.mk` should already do it correctly, just keep this in mind. Also transitively linking Python seems to be fine (`-lMRPython` is fine).
+  * Make sure you're not linking against Python **and** do use `-Xlinker -undefined -Xlinker dynamic_lookup` linker flags. The `generate.mk` should already do it correctly, just keep this in mind. Also transitively linking Python seems to be fine (`-lMRPython` is fine).
 
-  * Also make sure you used the same Python version that you used to build it.
+    Failure to do this will have no effect when importing the module directly, but will segfault when importing it as a wheel, **or** when using a wrong Python version even without the wheel.
