@@ -281,9 +281,10 @@ LINKER_FLAGS += -ltbb
 #   /Library/Developer/CommandLineTools/usr/bin/install_name_tool: changing install names or rpaths can't be redone for: /private/var/folders/c2/_t7lgq_s3zb_r01vy_1qd6nh0000gs/T/tmpatczljnu/wheel/meshlib/mrmeshpy.so (for architecture arm64) because larger updated load commands do not fit (the program must be relinked, and you may need to use -headerpad or -headerpad_max_install_names)
 # Apparently there's not enough space in the binary to fit longer library paths, and this pads it to have to up MAXPATHLEN space for each path.
 LINKER_FLAGS += -Wl,-headerpad_max_install_names
-# Those fix a segfault when importing the emodule, that only happens for wheels, not raw binaries.
+# Those fix a segfault when importing the module, that only happens for wheels, not raw binaries.
 # Pybind manual says you must use those.
 # Also note that this is one long flag (`-undefined dynamic_lookup`), not two independent fones.
+# Also not that you MUST NOT link the Python libs in addition to doing this, otherwise you'll still get segfaults.
 LINKER_FLAGS += -Xlinker -undefined -Xlinker dynamic_lookup
 # The min version. We override it to avoid incompatibility warnings against Apple Clang when linking.
 ifneq ($(MACOS_MIN_VER),)

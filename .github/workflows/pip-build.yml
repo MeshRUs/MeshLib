@@ -25,289 +25,289 @@ jobs:
       - uses: actions-ecosystem/action-get-latest-tag@v1
         id: get-latest-tag
 
-  # manylinux-pip-build:
-  #   needs: setup
-  #   timeout-minutes: 80
-  #   runs-on: ${{ matrix.runner }}
-  #   container:
-  #     image: ${{ matrix.docker-image }}
-  #     options: ${{ matrix.container-options }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform: ["x86_64", "aarch64"]
-  #       py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-  #       include:
-  #         - platform: "x86_64"
-  #           docker-image: "meshlib/meshlib-ubuntu20:mrbind-ci"
-  #           container-options: "--user root"
-  #           runner: ubuntu-latest
-  #         - platform: "aarch64"
-  #           docker-image: "meshlib/meshlib-ubuntu-arm64:mrbind-ci"
-  #           container-options: "--user root"
-  #           runner: [ 'self-hosted', 'linux-arm64' ]
-  #         - py-version: "3.8"
-  #           py-tag: "cp38"
-  #           py-cmd: "python3.8"
-  #         - py-version: "3.9"
-  #           py-tag: "cp39"
-  #           py-cmd: "python3.9"
-  #         - py-version: "3.10"
-  #           py-tag: "cp310"
-  #           py-cmd: "python3.10"
-  #         - py-version: "3.11"
-  #           py-tag: "cp311"
-  #           py-cmd: "python3.11"
-  #         - py-version: "3.12"
-  #           py-tag: "cp312"
-  #           py-cmd: "python3.12"
-  #   steps:
-  #       # Work around some weird permission errors in the runner.
-  #     - name: Git - add safe directory
-  #       run: git config --global --add safe.directory '*'
+  manylinux-pip-build:
+    needs: setup
+    timeout-minutes: 80
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ${{ matrix.docker-image }}
+      options: ${{ matrix.container-options }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ["x86_64", "aarch64"]
+        py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        include:
+          - platform: "x86_64"
+            docker-image: "meshlib/meshlib-ubuntu20:mrbind-ci"
+            container-options: "--user root"
+            runner: ubuntu-latest
+          - platform: "aarch64"
+            docker-image: "meshlib/meshlib-ubuntu-arm64:mrbind-ci"
+            container-options: "--user root"
+            runner: [ 'self-hosted', 'linux-arm64' ]
+          - py-version: "3.8"
+            py-tag: "cp38"
+            py-cmd: "python3.8"
+          - py-version: "3.9"
+            py-tag: "cp39"
+            py-cmd: "python3.9"
+          - py-version: "3.10"
+            py-tag: "cp310"
+            py-cmd: "python3.10"
+          - py-version: "3.11"
+            py-tag: "cp311"
+            py-cmd: "python3.11"
+          - py-version: "3.12"
+            py-tag: "cp312"
+            py-cmd: "python3.12"
+    steps:
+        # Work around some weird permission errors in the runner.
+      - name: Git - add safe directory
+        run: git config --global --add safe.directory '*'
 
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-  #     - name: Python setup
-  #       if: ${{ matrix.py-version != '3.8' }}
-  #       run: |
-  #         apt -y update && apt -y upgrade && apt -y install software-properties-common
-  #         add-apt-repository -y ppa:deadsnakes/ppa && apt -y install ${{ matrix.py-cmd }}-dev ${{ matrix.py-cmd }}-distutils
+      - name: Python setup
+        if: ${{ matrix.py-version != '3.8' }}
+        run: |
+          apt -y update && apt -y upgrade && apt -y install software-properties-common
+          add-apt-repository -y ppa:deadsnakes/ppa && apt -y install ${{ matrix.py-cmd }}-dev ${{ matrix.py-cmd }}-distutils
 
-  #     - name: Pip setup
-  #       run: |
-  #         curl -sS https://bootstrap.pypa.io/get-pip.py | ${{ matrix.py-cmd }}
-  #         ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
-  #         ${{ matrix.py-cmd }} -m pip install pytest
+      - name: Pip setup
+        run: |
+          curl -sS https://bootstrap.pypa.io/get-pip.py | ${{ matrix.py-cmd }}
+          ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
+          ${{ matrix.py-cmd }} -m pip install pytest
 
-  #     - name: Install thirdparty libs
-  #       run: |
-  #         ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
-  #         ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
+      - name: Install thirdparty libs
+        run: |
+          ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
+          ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
 
-  #     - name: Build
-  #       run: ./scripts/build_source.sh
-  #       env:
-  #         MESHLIB_PYTHON_VERSION: ${{matrix.py-version}}
-  #         MESHLIB_BUILD_RELEASE: "ON"
-  #         MESHLIB_BUILD_DEBUG: "OFF"
-  #         CMAKE_CXX_COMPILER: /usr/bin/clang++-11
-  #         # FIXME: OpenGL libraries are included to wheel packages when the XDE module is used
-  #         MR_CMAKE_OPTIONS: >
-  #           -DMRIOEXTRAS_OPENCASCADE_USE_XDE=OFF
-  #         # not realy needed
-  #         CMAKE_C_COMPILER: /usr/bin/clang-11
+      - name: Build
+        run: ./scripts/build_source.sh
+        env:
+          MESHLIB_PYTHON_VERSION: ${{matrix.py-version}}
+          MESHLIB_BUILD_RELEASE: "ON"
+          MESHLIB_BUILD_DEBUG: "OFF"
+          CMAKE_CXX_COMPILER: /usr/bin/clang++-11
+          # FIXME: OpenGL libraries are included to wheel packages when the XDE module is used
+          MR_CMAKE_OPTIONS: >
+            -DMRIOEXTRAS_OPENCASCADE_USE_XDE=OFF
+          # not realy needed
+          CMAKE_C_COMPILER: /usr/bin/clang-11
 
-  #       # Also print the amount of RAM. Not doing it in the same step as building the bindings, because when that fails, the logs are sometimes lost.
-  #     - name: Build MRBind
-  #       run: |
-  #         ./scripts/mrbind/install_mrbind_ubuntu.sh
-  #         free -h
+        # Also print the amount of RAM. Not doing it in the same step as building the bindings, because when that fails, the logs are sometimes lost.
+      - name: Build MRBind
+        run: |
+          ./scripts/mrbind/install_mrbind_ubuntu.sh
+          free -h
 
-  #     - name: Generate and build MRBind bindings
-  #       run: |
-  #         make -f scripts/mrbind/generate.mk -B --trace PACKAGE_NAME=meshlib CXX_FOR_ABI=/usr/bin/clang++-11 PYTHON_PKGCONF_NAME=python-${{matrix.py-version}}-embed
+      - name: Generate and build MRBind bindings
+        run: |
+          make -f scripts/mrbind/generate.mk -B --trace PACKAGE_NAME=meshlib CXX_FOR_ABI=/usr/bin/clang++-11 PYTHON_PKGCONF_NAME=python-${{matrix.py-version}}-embed
 
-  #     - name: Run Tests
-  #       run: MR_LOCAL_RESOURCES=1 xvfb-run -a ./build/Release/bin/MeshViewer -hidden -noEventLoop -unloadPluginsAtEnd
+      - name: Run Tests
+        run: MR_LOCAL_RESOURCES=1 xvfb-run -a ./build/Release/bin/MeshViewer -hidden -noEventLoop -unloadPluginsAtEnd
 
-  #     - name: Unit Tests
-  #       # Using `cd` here fixes weird library loading issues.
-  #       run: cd ./build/Release/bin/meshlib && ../MRTest
+      - name: Unit Tests
+        # Using `cd` here fixes weird library loading issues.
+        run: cd ./build/Release/bin/meshlib && ../MRTest
 
-  #     - name: Python Tests
-  #       working-directory: ./build/Release/bin
-  #       run: ${{ matrix.py-cmd }} ./../../../scripts/run_python_test_script.py -cmd ${{ matrix.py-cmd }}
+      - name: Python Tests
+        working-directory: ./build/Release/bin
+        run: ${{ matrix.py-cmd }} ./../../../scripts/run_python_test_script.py -cmd ${{ matrix.py-cmd }}
 
-  #     - name: Create and fix Wheel
-  #       run: |
-  #         ${{ matrix.py-cmd }} ./scripts/wheel/build_wheel.py --version ${{needs.setup.outputs.version_tag}}
+      - name: Create and fix Wheel
+        run: |
+          ${{ matrix.py-cmd }} ./scripts/wheel/build_wheel.py --version ${{needs.setup.outputs.version_tag}}
 
-  #     - name: Upload to Test Artifacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
-  #         path: ./scripts/wheel/meshlib/wheelhouse/meshlib-*.whl
-  #         retention-days: 1
+      - name: Upload to Test Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
+          path: ./scripts/wheel/meshlib/wheelhouse/meshlib-*.whl
+          retention-days: 1
 
-  # windows-pip-build:
-  #   needs: setup
-  #   timeout-minutes: 90
-  #   runs-on: windows-2019
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-  #       include:
-  #         - py-version: "3.8"
-  #           py-tag: "cp38"
-  #           py-short-version: "38"
-  #           py-dir: "Python38"
-  #           py-file: "python38"
-  #           embed-version: "3.8.9"
-  #         - py-version: "3.9"
-  #           py-tag: "cp39"
-  #           py-short-version: "39"
-  #           py-dir: "Python39"
-  #           py-file: "python39"
-  #           embed-version: "3.9.9"
-  #         - py-version: "3.10"
-  #           py-tag: "cp310"
-  #           py-short-version: "310"
-  #           py-dir: "Python310"
-  #           py-file: "python310"
-  #           embed-version: "3.10.0"
-  #         - py-version: "3.11"
-  #           py-tag: "cp311"
-  #           py-short-version: "311"
-  #           py-dir: "Python311"
-  #           py-file: "python311"
-  #           embed-version: "3.11.0"
-  #         - py-version: "3.12"
-  #           py-tag: "cp312"
-  #           py-short-version: "312"
-  #           py-dir: "Python312"
-  #           py-file: "python312"
-  #           embed-version: "3.12.0"
-  #   permissions:
-  #     id-token: write # This is required for requesting the JWT
-  #     contents: read  # This is required for actions/checkout
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
+  windows-pip-build:
+    needs: setup
+    timeout-minutes: 90
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        include:
+          - py-version: "3.8"
+            py-tag: "cp38"
+            py-short-version: "38"
+            py-dir: "Python38"
+            py-file: "python38"
+            embed-version: "3.8.9"
+          - py-version: "3.9"
+            py-tag: "cp39"
+            py-short-version: "39"
+            py-dir: "Python39"
+            py-file: "python39"
+            embed-version: "3.9.9"
+          - py-version: "3.10"
+            py-tag: "cp310"
+            py-short-version: "310"
+            py-dir: "Python310"
+            py-file: "python310"
+            embed-version: "3.10.0"
+          - py-version: "3.11"
+            py-tag: "cp311"
+            py-short-version: "311"
+            py-dir: "Python311"
+            py-file: "python311"
+            embed-version: "3.11.0"
+          - py-version: "3.12"
+            py-tag: "cp312"
+            py-short-version: "312"
+            py-dir: "Python312"
+            py-file: "python312"
+            embed-version: "3.12.0"
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-  #     - name: Checkout Vcpkg ${{env.VCPKG-VERSION}}
-  #       working-directory: C:\vcpkg
-  #       run: |
-  #         git fetch
-  #         git checkout ${{env.VCPKG-VERSION}}
+      - name: Checkout Vcpkg ${{env.VCPKG-VERSION}}
+        working-directory: C:\vcpkg
+        run: |
+          git fetch
+          git checkout ${{env.VCPKG-VERSION}}
 
-  #     - name: Restore Vcpkg Cache
-  #       uses: actions/cache@v4
-  #       id: vcpkg-cache
-  #       with:
-  #         key: vcpkg-cache-${{env.VCPKG-VERSION}}
-  #         path: |
-  #           C:\vcpkg\*
+      - name: Restore Vcpkg Cache
+        uses: actions/cache@v4
+        id: vcpkg-cache
+        with:
+          key: vcpkg-cache-${{env.VCPKG-VERSION}}
+          path: |
+            C:\vcpkg\*
 
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: arn:aws:iam::259351611210:role/GitHubMeshLibAwsCredsRole
-  #         aws-region: us-east-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::259351611210:role/GitHubMeshLibAwsCredsRole
+          aws-region: us-east-1
 
-  #     - name: Update vcpkg packages
-  #       run: |
-  #         .\thirdparty\install.bat --write-s3
+      - name: Update vcpkg packages
+        run: |
+          .\thirdparty\install.bat --write-s3
 
-  #     - name: Vcpkg integrate install
-  #       working-directory: C:\vcpkg
-  #       run: C:\vcpkg\vcpkg.exe integrate install
+      - name: Vcpkg integrate install
+        working-directory: C:\vcpkg
+        run: C:\vcpkg\vcpkg.exe integrate install
 
-  #     - uses: actions/setup-python@v5
-  #       id: setup-python
-  #       with:
-  #         python-version: ${{matrix.py-version}}
+      - uses: actions/setup-python@v5
+        id: setup-python
+        with:
+          python-version: ${{matrix.py-version}}
 
-  #     - name: Setup python
-  #       working-directory: C:\vcpkg\installed\x64-windows-meshlib
-  #       run: |
-  #         py -${{matrix.py-version}} -m pip install --upgrade pip
-  #         py -${{matrix.py-version}} -m pip install --upgrade -r ${{ github.workspace }}\requirements\python.txt
-  #         py -${{matrix.py-version}} -m pip install pytest
+      - name: Setup python
+        working-directory: C:\vcpkg\installed\x64-windows-meshlib
+        run: |
+          py -${{matrix.py-version}} -m pip install --upgrade pip
+          py -${{matrix.py-version}} -m pip install --upgrade -r ${{ github.workspace }}\requirements\python.txt
+          py -${{matrix.py-version}} -m pip install pytest
 
-  #     - name: Setup thirdparty
-  #       working-directory: ${{ github.workspace }}\thirdparty\python
-  #       run: |
-  #         curl https://www.python.org/ftp/python/${{matrix.embed-version}}/python-${{matrix.embed-version}}-embed-amd64.zip --output python-embed.zip
-  #         tar -xf python-embed.zip ${{matrix.py-file}}.zip
+      - name: Setup thirdparty
+        working-directory: ${{ github.workspace }}\thirdparty\python
+        run: |
+          curl https://www.python.org/ftp/python/${{matrix.embed-version}}/python-${{matrix.embed-version}}-embed-amd64.zip --output python-embed.zip
+          tar -xf python-embed.zip ${{matrix.py-file}}.zip
 
-  #     - name: Restore CUDA Cache
-  #       uses: actions/cache@v4
-  #       id: cuda-cache
-  #       with:
-  #         key: cuda-${{env.CUDA-VERSION}}
-  #         path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA*
+      - name: Restore CUDA Cache
+        uses: actions/cache@v4
+        id: cuda-cache
+        with:
+          key: cuda-${{env.CUDA-VERSION}}
+          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA*
 
-  #     - name: Install CUDA
-  #       if: steps.cuda-cache.outputs.cache-hit != 'true'
-  #       run: choco install cuda --version=${{env.CUDA-VERSION}} --confirm
+      - name: Install CUDA
+        if: steps.cuda-cache.outputs.cache-hit != 'true'
+        run: choco install cuda --version=${{env.CUDA-VERSION}} --confirm
 
-  #     - name: Setup CUDA
-  #       shell: bash
-  #       run: |
-  #         echo "CUDA_PATH=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
-  #         echo "CUDA_PATH_V${{ env.CUDA-MAJOR }}_${{ env.CUDA-MINOR }}=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
-  #         echo "CUDA_PATH_VX_Y=CUDA_PATH_V${{ env.CUDA-MAJOR }}_${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
-  #         echo "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}\\bin" >> $GITHUB_PATH
+      - name: Setup CUDA
+        shell: bash
+        run: |
+          echo "CUDA_PATH=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
+          echo "CUDA_PATH_V${{ env.CUDA-MAJOR }}_${{ env.CUDA-MINOR }}=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
+          echo "CUDA_PATH_VX_Y=CUDA_PATH_V${{ env.CUDA-MAJOR }}_${{ env.CUDA-MINOR }}" >> $GITHUB_ENV
+          echo "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v${{ env.CUDA-MAJOR }}.${{ env.CUDA-MINOR }}\\bin" >> $GITHUB_PATH
 
-  #     - name: Install Visual Studio Integration
-  #       run: |
-  #         $x = (dir $env:CUDA_PATH -dir -recurse -depth 2).where({$_.name -eq 'visual_studio_integration'}).fullname
-  #         $y = (dir $x -dir -recurse).where({$_.name -eq 'MSBuildExtensions'}).fullname + '\*'
-  #         (gi 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\*\BuildCustomizations').fullname.foreach({cp $y $_})
+      - name: Install Visual Studio Integration
+        run: |
+          $x = (dir $env:CUDA_PATH -dir -recurse -depth 2).where({$_.name -eq 'visual_studio_integration'}).fullname
+          $y = (dir $x -dir -recurse).where({$_.name -eq 'MSBuildExtensions'}).fullname + '\*'
+          (gi 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\*\BuildCustomizations').fullname.foreach({cp $y $_})
 
-  #     - name: Add msbuild to PATH
-  #       uses: microsoft/setup-msbuild@v2
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
 
-  #     - name: Build
-  #       run: msbuild -m  source\MeshLib.sln -p:Configuration=Release -p:PythonVersion=${{matrix.py-short-version}} -p:PythonLibPath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\libs\${{matrix.py-file}}.lib -p:PythonDllPath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\${{matrix.py-file}}.dll -p:PythonIncludePath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\include\
+      - name: Build
+        run: msbuild -m  source\MeshLib.sln -p:Configuration=Release -p:PythonVersion=${{matrix.py-short-version}} -p:PythonLibPath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\libs\${{matrix.py-file}}.lib -p:PythonDllPath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\${{matrix.py-file}}.dll -p:PythonIncludePath=c:\hostedtoolcache\windows\python\${{steps.setup-python.outputs.python-version}}\x64\include\
 
-  #       # Install MSYS2 using their github action instead of ours `install_deps_windows_msys2.bat`. Local uses should use that bat file.
-  #       # There's no particular reason for not using our bat file, I'm just assuming the official action is somehow better.
-  #     - name: Install MSYS2 for MRBind
-  #       uses: msys2/setup-msys2@v2
-  #       with:
-  #         msystem: clang64
-  #         install: make mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-tools-extra mingw-w64-clang-x86_64-cmake
-  #         # Matching the location that `install_deps_windows_msys2.bat` uses, because that's what `install_mrbind_windows_msys2.bat` expects.
-  #         location: C:\msys64_meshlib_mrbind
+        # Install MSYS2 using their github action instead of ours `install_deps_windows_msys2.bat`. Local uses should use that bat file.
+        # There's no particular reason for not using our bat file, I'm just assuming the official action is somehow better.
+      - name: Install MSYS2 for MRBind
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: clang64
+          install: make mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-tools-extra mingw-w64-clang-x86_64-cmake
+          # Matching the location that `install_deps_windows_msys2.bat` uses, because that's what `install_mrbind_windows_msys2.bat` expects.
+          location: C:\msys64_meshlib_mrbind
 
-  #       # Move `C:\msys64_meshlib_mrbind\msys64\*` to the parent directory, that's what our .bat files expect.
-  #     - name: Adjust MSYS2 installation directory
-  #       shell: cmd
-  #       run: |
-  #         for %%a in ("C:\msys64_meshlib_mrbind\msys64\*") do move /y "%%~fa" C:\msys64_meshlib_mrbind
-  #         for /d %%a in ("C:\msys64_meshlib_mrbind\msys64\*") do move /y "%%~fa" C:\msys64_meshlib_mrbind
-  #         rmdir C:\msys64_meshlib_mrbind\msys64
+        # Move `C:\msys64_meshlib_mrbind\msys64\*` to the parent directory, that's what our .bat files expect.
+      - name: Adjust MSYS2 installation directory
+        shell: cmd
+        run: |
+          for %%a in ("C:\msys64_meshlib_mrbind\msys64\*") do move /y "%%~fa" C:\msys64_meshlib_mrbind
+          for /d %%a in ("C:\msys64_meshlib_mrbind\msys64\*") do move /y "%%~fa" C:\msys64_meshlib_mrbind
+          rmdir C:\msys64_meshlib_mrbind\msys64
 
-  #       # For some reason `./scripts/mrbind/install_mrbind_windows_msys2.bat` doesn't work here in CI, build manually.
-  #     - name: Build MRBind
-  #       run: C:\msys64_meshlib_mrbind\msys2_shell.cmd -defterm -no-start -clang64 -full-path -c "cd ~ && git clone https://github.com/MeshInspector/mrbind && cd mrbind && cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebugInfo && cmake --build build"
+        # For some reason `./scripts/mrbind/install_mrbind_windows_msys2.bat` doesn't work here in CI, build manually.
+      - name: Build MRBind
+        run: C:\msys64_meshlib_mrbind\msys2_shell.cmd -defterm -no-start -clang64 -full-path -c "cd ~ && git clone https://github.com/MeshInspector/mrbind && cd mrbind && cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebugInfo && cmake --build build"
 
-  #     - name: Generate and build MRBind bindings
-  #       shell: cmd
-  #       # Note that `\` doesn't work here as a line continuation, and will lead to weird errors.
-  #       run: |
-  #         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64
-  #         call ./scripts/mrbind/generate_win.bat -B --trace PACKAGE_NAME=meshlib PYTHON_PKGCONF_NAME= PYTHON_CFLAGS=-IC:/hostedtoolcache/windows/python/${{steps.setup-python.outputs.python-version}}/x64/include PYTHON_LDFLAGS="-LC:/hostedtoolcache/windows/python/${{steps.setup-python.outputs.python-version}}/x64/libs -l${{matrix.py-file}}"
+      - name: Generate and build MRBind bindings
+        shell: cmd
+        # Note that `\` doesn't work here as a line continuation, and will lead to weird errors.
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64
+          call ./scripts/mrbind/generate_win.bat -B --trace PACKAGE_NAME=meshlib PYTHON_PKGCONF_NAME= PYTHON_CFLAGS=-IC:/hostedtoolcache/windows/python/${{steps.setup-python.outputs.python-version}}/x64/include PYTHON_LDFLAGS="-LC:/hostedtoolcache/windows/python/${{steps.setup-python.outputs.python-version}}/x64/libs -l${{matrix.py-file}}"
 
-  #     - name: Run Test
-  #       working-directory: source\x64\Release
-  #       run: .\MeshViewer.exe -tryHidden -noEventLoop
+      - name: Run Test
+        working-directory: source\x64\Release
+        run: .\MeshViewer.exe -tryHidden -noEventLoop
 
-  #     - name: Unit Tests
-  #       run: py -${{matrix.py-version}} scripts\run_unit_test_script.py Release
+      - name: Unit Tests
+        run: py -${{matrix.py-version}} scripts\run_unit_test_script.py Release
 
-  #     - name: Python Tests
-  #       working-directory: source\x64\Release
-  #       run: py -${{matrix.py-version}} ..\..\..\scripts\run_python_test_script.py -cmd "py -${{matrix.py-version}}"
+      - name: Python Tests
+        working-directory: source\x64\Release
+        run: py -${{matrix.py-version}} ..\..\..\scripts\run_python_test_script.py -cmd "py -${{matrix.py-version}}"
 
-  #     - name: Create and fix Wheel
-  #       run: |
-  #         py -${{matrix.py-version}} .\scripts\wheel\build_wheel.py --plat-name=win-amd64 --version ${{needs.setup.outputs.version_tag}}
+      - name: Create and fix Wheel
+        run: |
+          py -${{matrix.py-version}} .\scripts\wheel\build_wheel.py --plat-name=win-amd64 --version ${{needs.setup.outputs.version_tag}}
 
-  #     - name: Upload to Test Artifacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: Windows-python${{ matrix.py-version }}
-  #         path: wheelhouse\meshlib-*.whl
-  #         retention-days: 1
+      - name: Upload to Test Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-python${{ matrix.py-version }}
+          path: wheelhouse\meshlib-*.whl
+          retention-days: 1
 
   macos-pip-build:
     needs: setup
@@ -424,111 +424,111 @@ jobs:
           path: meshlib-*.whl
           retention-days: 1
 
-  # manylinux-pip-test:
-  #   needs: [manylinux-pip-build]
-  #   timeout-minutes: 20
-  #   runs-on: ${{ matrix.runner }}
-  #   container:
-  #     image: ${{matrix.container-prefix}}${{matrix.os}}
-  #     options: ${{ matrix.container-options }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform: ["x86_64", "aarch64"]
-  #       os: ["ubuntu:20.04", "ubuntu:22.04", "debian:11-slim", "fedora:37", "fedora:39"]
-  #       include:
-  #         - platform: "x86_64"
-  #           runner: ubuntu-latest
-  #           container-options: "--user root"
-  #           container-prefix: " "
-  #         - platform: "aarch64"
-  #           runner: [ 'self-hosted', 'linux-arm64' ]
-  #           container-options: "--user root"
-  #           container-prefix: "arm64v8/"
-  #         - os: "ubuntu:20.04"
-  #           py-version: "3.8"
-  #           py-cmd: "python3.8"
-  #         - os: "debian:11-slim"
-  #           py-version: "3.9"
-  #           py-cmd: "python3.9"
-  #         - os: "ubuntu:22.04"
-  #           py-version: "3.10"
-  #           py-cmd: "python3.10"
-  #         - os: "fedora:37"
-  #           py-version: "3.11"
-  #           py-cmd: "python3.11"
-  #         - os: "fedora:39"
-  #           py-version: "3.12"
-  #           py-cmd: "python3.12"
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
+  manylinux-pip-test:
+    needs: [manylinux-pip-build]
+    timeout-minutes: 20
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ${{matrix.container-prefix}}${{matrix.os}}
+      options: ${{ matrix.container-options }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ["x86_64", "aarch64"]
+        os: ["ubuntu:20.04", "ubuntu:22.04", "debian:11-slim", "fedora:37", "fedora:39"]
+        include:
+          - platform: "x86_64"
+            runner: ubuntu-latest
+            container-options: "--user root"
+            container-prefix: " "
+          - platform: "aarch64"
+            runner: [ 'self-hosted', 'linux-arm64' ]
+            container-options: "--user root"
+            container-prefix: "arm64v8/"
+          - os: "ubuntu:20.04"
+            py-version: "3.8"
+            py-cmd: "python3.8"
+          - os: "debian:11-slim"
+            py-version: "3.9"
+            py-cmd: "python3.9"
+          - os: "ubuntu:22.04"
+            py-version: "3.10"
+            py-cmd: "python3.10"
+          - os: "fedora:37"
+            py-version: "3.11"
+            py-cmd: "python3.11"
+          - os: "fedora:39"
+            py-version: "3.12"
+            py-cmd: "python3.12"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  #     - name: Ubuntu system setup
-  #       if: ${{ matrix.os == 'ubuntu:20.04' || matrix.os == 'ubuntu:22.04' || matrix.os == 'debian:11-slim' }}
-  #       run: apt -y update && apt -y upgrade && apt -y install curl libssl-dev python3-distutils python3-pip
+      - name: Ubuntu system setup
+        if: ${{ matrix.os == 'ubuntu:20.04' || matrix.os == 'ubuntu:22.04' || matrix.os == 'debian:11-slim' }}
+        run: apt -y update && apt -y upgrade && apt -y install curl libssl-dev python3-distutils python3-pip
 
-  #     - name: Fedora 37 system setup
-  #       if: ${{matrix.os == 'fedora:37' || matrix.os == 'fedora:39'}}
-  #       run: dnf -y install python3 pip
+      - name: Fedora 37 system setup
+        if: ${{matrix.os == 'fedora:37' || matrix.os == 'fedora:39'}}
+        run: dnf -y install python3 pip
 
-  #     - name: Pip setup
-  #       run: |
-  #         ${{ matrix.py-cmd }} -m pip install --upgrade pip
-  #         ${{ matrix.py-cmd }} -m pip uninstall -y meshlib
-  #         ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
-  #         ${{ matrix.py-cmd }} -m pip install pytest
+      - name: Pip setup
+        run: |
+          ${{ matrix.py-cmd }} -m pip install --upgrade pip
+          ${{ matrix.py-cmd }} -m pip uninstall -y meshlib
+          ${{ matrix.py-cmd }} -m pip install --upgrade -r ./requirements/python.txt
+          ${{ matrix.py-cmd }} -m pip install pytest
 
-  #     - name: Download Meshlib wheel from Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
-  #         merge-multiple: true
+      - name: Download Meshlib wheel from Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ManyLinux-${{matrix.py-cmd}}-${{matrix.platform}}
+          merge-multiple: true
 
-  #     - name: Meshlib wheel install
-  #       run: ${{ matrix.py-cmd }} -m pip install ${{ matrix.pip-options }} ./meshlib-*.whl
+      - name: Meshlib wheel install
+        run: ${{ matrix.py-cmd }} -m pip install ${{ matrix.pip-options }} ./meshlib-*.whl
 
-  #     - name: Run Python tests
-  #       working-directory: test_python
-  #       run: ${{ matrix.py-cmd }} -m pytest -s -v
+      - name: Run Python tests
+        working-directory: test_python
+        run: ${{ matrix.py-cmd }} -m pytest -s -v
 
-  # windows-pip-test:
-  #   needs: [windows-pip-build]
-  #   timeout-minutes: 20
-  #   runs-on: windows-latest
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
+  windows-pip-test:
+    needs: [windows-pip-build]
+    timeout-minutes: 20
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  #     - name: Download Meshlib wheel from Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: Windows-python${{matrix.py-version}}
-  #         merge-multiple: true
+      - name: Download Meshlib wheel from Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Windows-python${{matrix.py-version}}
+          merge-multiple: true
 
-  #     - name: Python setup
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.py-version }}
+      - name: Python setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py-version }}
 
-  #     - name: Setup pip
-  #       run: |
-  #         py -${{matrix.py-version}} -m pip install --upgrade pip
-  #         py -${{matrix.py-version}} -m pip uninstall -y meshlib
-  #         py -${{matrix.py-version}} -m pip install --upgrade -r ./requirements/python.txt
-  #         py -${{matrix.py-version}} -m pip install pytest
+      - name: Setup pip
+        run: |
+          py -${{matrix.py-version}} -m pip install --upgrade pip
+          py -${{matrix.py-version}} -m pip uninstall -y meshlib
+          py -${{matrix.py-version}} -m pip install --upgrade -r ./requirements/python.txt
+          py -${{matrix.py-version}} -m pip install pytest
 
-  #     - name: Install Meshlib wheel
-  #       shell: pwsh
-  #       run: $wheel_file=Get-ChildItem -Filter meshlib*win*.whl; py -${{matrix.py-version}} -m pip install $wheel_file
+      - name: Install Meshlib wheel
+        shell: pwsh
+        run: $wheel_file=Get-ChildItem -Filter meshlib*win*.whl; py -${{matrix.py-version}} -m pip install $wheel_file
 
-  #     - name: Run Python tests
-  #       working-directory: test_python
-  #       run: py -${{matrix.py-version}} -m pytest -s -v
+      - name: Run Python tests
+        working-directory: test_python
+        run: py -${{matrix.py-version}} -m pytest -s -v
 
   macos-pip-test:
     needs: [macos-pip-build]
@@ -596,7 +596,7 @@ jobs:
   delete-artifacts:
     timeout-minutes: 5
     runs-on: ubuntu-20.04
-    needs: [macos-pip-test] # manylinux-pip-test, windows-pip-test
+    needs: [manylinux-pip-test, windows-pip-test, macos-pip-test]
     if: always()
     steps:
       - name: Delete all ManyLinux

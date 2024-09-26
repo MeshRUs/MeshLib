@@ -152,3 +152,9 @@ You can find some undocumented flags/variables in `generate.mk`.
 * **`undefined symbol: void __cdecl std::_Literal_zero_is_expected(void)`**
 
   * Update your VS 2022.
+
+* **Importing the wheel segfaults on MacOS**
+
+  * Make sure you're not linking against Python **and** do use `-Xlinker -undefined -Xlinker dynamic_lookup` linker flags. Failure to do this will cause a segfault when importing the wheel, but not when importing the module without it. The `generate.mk` should already do it correctly, just keep this in mind. Also transitively linking Python seems to be fine (`-lMRPython` is fine).
+
+  * Also make sure you used the same Python version that you used to build it.
