@@ -10,8 +10,6 @@ $(call)
 $(call)
 endef
 
-override lparen := )
-
 # This function encloses $1 in quotes. We also replace newlines with spaces.
 override quote = '$(subst ','"'"',$(subst $(lf), ,$1))'
 
@@ -181,9 +179,15 @@ ifneq ($(IS_WINDOWS),)
 # Intentionally using non-debug Python even in Debug builds, to mimic what MeshLib does. Unsure why we do this.
 PYTHON_CFLAGS := $(if $(PYTHON_PKGCONF_NAME),$(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --cflags $(PYTHON_PKGCONF_NAME)))
 PYTHON_LDFLAGS := $(if $(PYTHON_PKGCONF_NAME),$(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --libs $(PYTHON_PKGCONF_NAME)))
-else
+else # Linux or MacOS:
 PYTHON_CFLAGS := $(call safe_shell,pkg-config --cflags $(PYTHON_PKGCONF_NAME))
+ifneq ($(IS_MACOS),)
+# On MacOS we don't link Python, instead we use `-Xlinker -undefined -Xlinker dynamic_lookup` to avoid the errors.
+# This is important to avoid segfaults when importing the wheel.
+PYTHON_LDFLAGS :=
+else
 PYTHON_LDFLAGS := $(call safe_shell,pkg-config --libs $(PYTHON_PKGCONF_NAME))
+endif
 endif
 
 # Python module suffix.
@@ -197,6 +201,9 @@ PYTHON_MODULE_SUFFIX := .so
 endif
 $(info Using Python module suffix: $(PYTHON_MODULE_SUFFIX))
 
+
+INPUT_PROJECTS := MRMesh MRIOExtras MRSymbolMesh MRVoxels
+
 # --- End of configuration variables.
 
 
@@ -206,7 +213,7 @@ PACKAGE_NAME := meshlib2
 MODULE_OUTPUT_DIR := $(MESHLIB_SHLIB_DIR)/$(PACKAGE_NAME)
 
 # Those variables are for mrbind/scripts/apply_to_files.mk
-INPUT_DIRS := $(addprefix $(makefile_dir)/../../source/,MRMesh MRIOExtras MRPython MRSymbolMesh MRVoxels) $(makefile_dir)/extra_headers
+INPUT_DIRS := $(addprefix $(makefile_dir)/../../source/,$(INPUT_PROJECTS)) $(makefile_dir)/extra_headers
 INPUT_FILES_BLACKLIST := $(call load_file,$(makefile_dir)/input_file_blacklist.txt)
 ifneq ($(IS_WINDOWS),)
 OUTPUT_DIR := source/TempOutput/PythonBindings/x64/$(VS_MODE)
@@ -224,7 +231,7 @@ COMPILER := $(CXX_FOR_BINDINGS) $(subst $(lf), ,$(call load_file,$(makefile_dir)
 LINKER_OUTPUT := $(MODULE_OUTPUT_DIR)/mrmeshpy$(PYTHON_MODULE_SUFFIX)
 LINKER := $(CXX_FOR_BINDINGS) -fuse-ld=lld
 # Unsure if `-dynamiclib` vs `-shared` makes any difference on MacOS. I'm using the former because that's what CMake does.
-LINKER_FLAGS := $(EXTRA_LDFLAGS) -L$(DEPS_LIB_DIR) $(PYTHON_LDFLAGS) -L$(MESHLIB_SHLIB_DIR) -lMRMesh -lMRIOExtras -lMRSymbolMesh -lMRPython -lMRVoxels $(if $(IS_MACOS),-dynamiclib,-shared) $(call load_file,$(makefile_dir)/linker_flags.txt)
+LINKER_FLAGS := $(EXTRA_LDFLAGS) -L$(DEPS_LIB_DIR) $(PYTHON_LDFLAGS) -L$(MESHLIB_SHLIB_DIR) $(addprefix -l,$(INPUT_PROJECTS)) -lMRPython $(if $(IS_MACOS),-dynamiclib,-shared) $(call load_file,$(makefile_dir)/linker_flags.txt)
 NUM_FRAGMENTS := 4
 EXTRA_INPUT_SOURCES := $(makefile_dir)/helpers.cpp
 
