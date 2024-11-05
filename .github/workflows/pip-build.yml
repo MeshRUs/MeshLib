@@ -79,8 +79,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Checkout third-party submodules
         # Some of those safe.directory rules could be redudant.
@@ -203,7 +201,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Checkout Vcpkg ${{env.VCPKG-VERSION}}
         working-directory: C:\vcpkg
@@ -372,7 +369,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Fix links x86
         if: ${{ matrix.platform == 'x86' }}
@@ -488,8 +484,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Ubuntu system setup
         if: ${{ matrix.os == 'ubuntu:20.04' || matrix.os == 'ubuntu:22.04' || matrix.os == 'debian:11-slim' }}
@@ -530,8 +524,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Download Meshlib wheel from Artifact
         uses: actions/download-artifact@v4
@@ -592,8 +584,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{needs.setup.outputs.version_tag}}
 
       - name: Python setup
         if: ${{ !(matrix.platform == 'x86' && ( matrix.py-version == '3.11' || matrix.py-version == '3.12' ) ) }}
@@ -628,43 +618,10 @@ jobs:
         working-directory: test_python
         run: ${{ matrix.py-cmd }} -m pytest -s -v
 
-  upload-to-release:
-    needs: [manylinux-pip-test, windows-pip-test, macos-pip-test]
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Wheels Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ManyLinux-*
-          merge-multiple: true
-
-      - name: Download Wheels Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Windows-*
-          merge-multiple: true
-
-      - name: Download Wheels Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Macos-*
-          merge-multiple: true
-
-      - name: Install twine
-        run: python3 -m pip install --upgrade pip twine
-
-      - name: Upload to Production PyPi
-        run: twine upload ./meshlib-*.whl -u __token__ -p ${{ secrets.PYPI_MESHINSPECTOR_TOKEN }} --skip-existing
-
-  post-release-test:
-    needs: upload-to-release
-    uses: MeshInspector/MeshLib/.github/workflows/release-tests.yml@master
-
   delete-artifacts:
     timeout-minutes: 5
     runs-on: ubuntu-20.04
-    needs: upload-to-release
+    needs: [macos-pip-test, windows-pip-test, manylinux-pip-test]
     if: always()
     steps:
       - name: Delete all ManyLinux
