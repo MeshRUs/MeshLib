@@ -15,6 +15,9 @@ namespace MR.DotNet
     using EdgePathReadOnly = System.Collections.ObjectModel.ReadOnlyCollection<EdgeId>;
     using EdgePath = System.Collections.Generic.List<EdgeId>;
 
+    using VertBitSetReadOnly = BitSetReadOnly;
+    using FaceBitSetReadOnly = BitSetReadOnly;
+
     public struct ThreeVertIds
     {
         public VertId v0;
@@ -149,7 +152,7 @@ namespace MR.DotNet
     public interface MeshOrPoints
     {
         public VertCoordsReadOnly Points { get; }
-        public BitSetReadOnly ValidPoints { get; }
+        public VertBitSetReadOnly ValidPoints { get; }
         public Box3f BoundingBox { get; }
     };
 
@@ -402,13 +405,13 @@ namespace MR.DotNet
             }
         }
         /// set of all valid vertices
-        public BitSetReadOnly ValidPoints
+        public VertBitSetReadOnly ValidPoints
         {
             get
             {
                 if (validPoints_ is null)
                 {
-                    validPoints_ = new BitSet(mrMeshTopologyGetValidVerts(meshTopology_));
+                    validPoints_ = new VertBitSet(mrMeshTopologyGetValidVerts(meshTopology_));
                 }
                 return validPoints_;
             }
@@ -427,13 +430,13 @@ namespace MR.DotNet
             }
         }
         /// set of all valid faces
-        public BitSetReadOnly ValidFaces
+        public FaceBitSetReadOnly ValidFaces
         {
             get
             {
                 if (validFaces_ is null)
                 {
-                    validFaces_ = new BitSet(mrMeshTopologyGetValidFaces(meshTopology_));
+                    validFaces_ = new FaceBitSet(mrMeshTopologyGetValidFaces(meshTopology_));
                 }
                 return validFaces_;
             }
@@ -526,12 +529,12 @@ namespace MR.DotNet
             return mrMeshVolume(mesh_, (IntPtr)null);
         }
         /// returns volume of closed mesh region, if region is not closed DBL_MAX is returned
-        public double Volume(BitSet region)
+        public double Volume(FaceBitSet region)
         {
             return mrMeshVolume(mesh_, region.bs_);
         }
         /// computes the area of given face-region (or whole mesh if region is null)
-        public double Area( BitSet? region = null )
+        public double Area( FaceBitSet? region = null )
         {
             return mrMeshArea( mesh_, region is null ? (IntPtr)null : region.bs_ );
         }
@@ -551,7 +554,7 @@ namespace MR.DotNet
         }
 
         /// deletes multiple given faces, also deletes adjacent edges and vertices if they were not shared by remaining faces and not in \param edgesToKeep
-        public void DeleteFaces( BitSet faces, BitSet? edgesToKeep = null )
+        public void DeleteFaces( FaceBitSet faces, UndirectedEdgeBitSet? edgesToKeep = null )
         {
             mrMeshDeleteFaces(mesh_, faces.bs_, edgesToKeep is null ? (IntPtr)null : edgesToKeep.bs_);
             clearManagedResources();
@@ -723,8 +726,8 @@ namespace MR.DotNet
         private bool needToDispose_ = true;
 
         private VertCoords? points_;
-        private BitSet? validPoints_;
-        private BitSet? validFaces_;
+        private VertBitSet? validPoints_;
+        private FaceBitSet? validFaces_;
         private Triangulation? triangulation_;
         private EdgePath? holeRepresentiveEdges_;
         private Box3f? boundingBox_;
@@ -766,10 +769,10 @@ namespace MR.DotNet
     public class MeshPart
     {
         public Mesh mesh;
-        public BitSet? region;
+        public FaceBitSet? region;
 
         internal MRMeshPart mrMeshPart;
-        public MeshPart(Mesh mesh, BitSet? region = null)
+        public MeshPart(Mesh mesh, FaceBitSet? region = null)
         {
             this.mesh = mesh;
             this.region = region;

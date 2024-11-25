@@ -101,6 +101,12 @@ MRBitSet* mrBitSetSub( const MRBitSet* a_, const MRBitSet* b_ )
     RETURN_NEW( a - b );
 }
 
+MRBitSet* mrBitSetOr( const MRBitSet* a_, const MRBitSet* b_ )
+{
+    ARG( a ); ARG( b );
+    RETURN_NEW( a | b );
+}
+
 MRBitSet* mrBitSetNew( size_t numBits, bool fillValue )
 {
     RETURN_NEW( BitSet( numBits, fillValue ) );

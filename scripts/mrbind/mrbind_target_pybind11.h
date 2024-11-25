@@ -1,4 +1,4 @@
-// Intentionally no pragma once, though currently it doesn't matter (see the mrbind header included below).
+// Intentionally no pragma once, to allow re-including multiple times with different values of `MB_PB11_STAGE`.
 
 #include <mrbind/targets/pybind11.h>
 

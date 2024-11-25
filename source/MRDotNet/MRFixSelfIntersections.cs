@@ -51,7 +51,7 @@ namespace MR.DotNet
         private static extern void mrFixSelfIntersectionsFix(IntPtr mesh, ref MRFixSelfIntersectionsSettings settings, ref IntPtr errorString );
 
         /// Find all self-intersections faces component-wise
-        static public BitSet GetFaces(Mesh mesh)
+        static public FaceBitSet GetFaces(Mesh mesh)
         {
             IntPtr errorStr = IntPtr.Zero;
             var mrFaces = mrFixSelfIntersectionsGetFaces( mesh.mesh_, IntPtr.Zero, ref errorStr );
@@ -63,7 +63,7 @@ namespace MR.DotNet
                 throw new SystemException(errorMessage);
             }
 
-            return new BitSet(mrFaces);
+            return new FaceBitSet(mrFaces);
         }
         /// Finds and fixes self-intersections per component:
         static public void Fix( ref Mesh mesh, Settings settings )

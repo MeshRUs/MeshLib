@@ -107,11 +107,11 @@ public:
 
     /// computes root-mean-square deviation between points
     /// or the standard deviation from given value if present
-    [[nodiscard]] MRMESH_API float getMeanSqDistToPoint( double* value = nullptr ) const;
+    [[nodiscard]] MRMESH_API float getMeanSqDistToPoint( std::optional<double> value = {} ) const;
 
     /// computes root-mean-square deviation from points to target planes
     /// or the standard deviation from given value if present
-    [[nodiscard]] MRMESH_API float getMeanSqDistToPlane( double* value = nullptr ) const;
+    [[nodiscard]] MRMESH_API float getMeanSqDistToPlane( std::optional<double> value = {} ) const;
 
     /// computes the number of samples able to form pairs
     [[nodiscard]] MRMESH_API size_t getNumSamples() const;

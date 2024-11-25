@@ -6,6 +6,7 @@
 #include "MRExpected.h"
 #include "MRMeshLoadSettings.h"
 #include "MRAffineXf3.h"
+#include "MRLoadedObjects.h"
 #include <filesystem>
 #include <istream>
 #include <string>
@@ -67,9 +68,8 @@ MRMESH_API Expected<std::vector<NamedMesh>> fromSceneObjFile( std::istream& in, 
 MRMESH_API Expected<std::vector<NamedMesh>> fromSceneObjFile( const char* data, size_t size, bool combineAllObjects, const std::filesystem::path& dir,
                                                                            const ObjLoadSettings& settings = {} );
 
-MRMESH_API Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::filesystem::path& results,
-                                                                             std::string* warnings = nullptr,
-                                                                             ProgressCallback cb = {} );
+/// reads all objects from .OBJ file
+MRMESH_API Expected<LoadedObjects> loadObjectFromObj( const std::filesystem::path& file, const ProgressCallback& cb = {} );
 
 } // namespace MeshLoad
 

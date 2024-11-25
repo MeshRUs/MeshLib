@@ -93,7 +93,7 @@ int main( int argc, char* argv[] )
     // set progress callback
     samplingParams.cb = onProgress;
 
-    MRMultiwayICP* icp = mrMultiwayICPNew( *inputXfs, inputNum, &samplingParams );
+    MRMultiwayICP* icp = mrMultiwayICPNew( inputXfs, inputNum, &samplingParams );
 
     MRICPProperties params = mrICPPropertiesNew();
     mrMultiwayICPSetParams( icp, &params );

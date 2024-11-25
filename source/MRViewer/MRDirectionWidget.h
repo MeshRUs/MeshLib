@@ -68,7 +68,10 @@ public:
         {}
         virtual void action( Type ) override
         {
+            auto len = widget_.length_;
             widget_.updateLength( length_ );
+            length_ = len;
+
         }
     private:
         DirectionWidget& widget_;

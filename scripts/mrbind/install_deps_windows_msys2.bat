@@ -53,6 +53,7 @@ rem ------ Install a specific version of Clang
 call %MSYS2_DIR%\msys2_shell.cmd -no-start -defterm -clang64 -c "'%~dp0'/msys2_install_clang_ver.sh %CLANG_VER%"
 
 rem ------ Install needed packages
-call %MSYS2_DIR%\msys2_shell.cmd -no-start -defterm -clang64 -c "pacman -S --noconfirm --needed make $MINGW_PACKAGE_PREFIX-cmake"
+rem `procps-ns` is for the `free` command to measure RAM.
+call %MSYS2_DIR%\msys2_shell.cmd -no-start -defterm -clang64 -c "pacman -S --noconfirm --needed make procps-ng $MINGW_PACKAGE_PREFIX-cmake"
 
 endlocal

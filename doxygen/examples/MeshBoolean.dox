@@ -7,12 +7,31 @@ Example of boolean operation
  
 - <b class="tab-title">C++</b>
 \include MeshBoolean.dox.cpp
+Source meshes
+\image html boolean_before.png
+Boolean intersection
+\image html boolean_after.png
+
 - <b class="tab-title">Python</b>
 \include MeshBoolean.dox.py
+Source meshes
+\image html boolean_before.png
+Boolean intersection
+\image html boolean_after.png
+
 - <b class="tab-title">C</b>
 \include MeshBoolean.dox.c
+Source meshes
+\image html boolean_before.png
+Boolean intersection
+\image html boolean_after.png
+
 - <b class="tab-title">C#</b>
 \include MeshBoolean.dox.cs
+Source meshes
+\image html boolean_before.png
+Boolean intersection
+\image html boolean_after.png
 
 </div>
 

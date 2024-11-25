@@ -203,6 +203,11 @@ void popTree()
     #endif
 }
 
+std::string_view Entry::getKindName() const
+{
+    return std::visit( []<typename T>( const T & ){ return T::kindName; }, value );
+}
+
 const GroupEntry& getRootEntry()
 {
     return state.root;

@@ -128,13 +128,6 @@ jobs:
       - name: Setup python requirements
         run: python3 -m pip install -r ./requirements/python.txt
 
-      - name: Check that MRBind bindings parse successfully
-        if: ${{inputs.mrbind}}
-        env:
-          CXX: ${{matrix.cxx-compiler}}
-        run: |
-          make -f scripts/mrbind/generate.mk only-generate
-
       - name: Build
         run: ./scripts/build_source.sh
         env:

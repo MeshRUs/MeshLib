@@ -90,7 +90,7 @@ namespace MR.DotNet
         }
         
         /// Computes combined metric after filling a hole
-        public double CalcCombinedFillMetric(Mesh mesh, BitSet filledRegion)
+        public double CalcCombinedFillMetric(Mesh mesh, FaceBitSet filledRegion)
         {
             return mrCalcCombinedFillMetric(mesh.mesh_, filledRegion.bs_, mrMetric_);
         }

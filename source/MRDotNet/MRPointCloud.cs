@@ -9,6 +9,7 @@ using static MR.DotNet.Vector3f;
 
 namespace MR.DotNet
 {
+    using VertBitSetReadOnly = BitSetReadOnly;
     using VertCoordsReadOnly = System.Collections.ObjectModel.ReadOnlyCollection<Vector3f>;
     using VertCoords = System.Collections.Generic.List<Vector3f>;
 
@@ -140,13 +141,13 @@ namespace MR.DotNet
             } 
         }
         /// set of all valid vertices
-        public BitSetReadOnly ValidPoints
+        public VertBitSetReadOnly ValidPoints
         {
             get
             {
                 if (validPoints_ is null)
                 {
-                    validPoints_ = new BitSet(mrPointCloudValidPoints(pc_));
+                    validPoints_ = new VertBitSet(mrPointCloudValidPoints(pc_));
                 }
                 return validPoints_;
             }
@@ -238,7 +239,7 @@ namespace MR.DotNet
         internal IntPtr pc_;
         private VertCoords? points_;
         private VertCoords? normals_;
-        private BitSet? validPoints_;
+        private VertBitSet? validPoints_;
         private Box3f? boundingBox_;
     }
 }

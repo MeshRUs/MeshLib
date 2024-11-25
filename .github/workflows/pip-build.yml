@@ -288,7 +288,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: clang64
-          install: make gawk
+          install: make gawk procps-ng
           location: C:\msys64_meshlib_mrbind
 
       - name: Install Clang in MSYS2

@@ -54,11 +54,11 @@ MRMESHC_API void mrMultiwayICPSetParams( MRMultiwayICP* mwicp, const MRICPProper
 
 /// computes root-mean-square deviation between points
 /// or the standard deviation from given value if present
-MRMESHC_API float mrMultiWayICPGetMeanSqDistToPoint( const MRMultiwayICP* mwicp, double* value );
+MRMESHC_API float mrMultiWayICPGetMeanSqDistToPoint( const MRMultiwayICP* mwicp, const double* value );
 
 /// computes root-mean-square deviation from points to target planes
 /// or the standard deviation from given value if present
-MRMESHC_API float mrMultiWayICPGetMeanSqDistToPlane( const MRMultiwayICP* mwicp, double* value );
+MRMESHC_API float mrMultiWayICPGetMeanSqDistToPlane( const MRMultiwayICP* mwicp, const double* value );
 
 /// computes the number of samples able to form pairs
 MRMESHC_API size_t mrMultiWayICPGetNumSamples( const MRMultiwayICP* mwicp );

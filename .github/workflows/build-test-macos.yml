@@ -94,15 +94,13 @@ jobs:
         if: ${{inputs.mrbind}}
         env:
           PATH: ${{matrix.brewpath}}/opt/make/libexec/gnubin:${{matrix.brewpath}}/opt/grep/libexec/gnubin:${{env.PATH}}
-        # Using 4 threads on github runners, because they have only 8G of RAM.
         run: |
           make --version
           make -f scripts/mrbind/generate.mk \
             -B --trace \
             PYTHON_PKGCONF_NAME=python-3.10-embed \
             EXTRA_CFLAGS='-DMB_PB11_ALLOW_STD_EXPECTED=0 -DMR_USE_STD_EXPECTED=0' \
-            MESHLIB_SHLIB_DIR=build/${{matrix.config}}/bin \
-            ${{ fromJSON('["-j8", "-j4"]')[matrix.os == 'github-arm'] }}
+            MESHLIB_SHLIB_DIR=build/${{matrix.config}}/bin
 
       - name: Run Start-and-Exit Tests
         if: ${{ matrix.os == 'arm' }}

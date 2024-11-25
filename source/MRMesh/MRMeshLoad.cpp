@@ -24,6 +24,96 @@
 namespace MR
 {
 
+Expected<Mesh> loadMrmesh( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromMrmesh( file, settings );
+}
+
+Expected<Mesh> loadMrmesh( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromMrmesh( in, settings );
+}
+
+Expected<Mesh> loadOff( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromOff( file, settings );
+}
+
+Expected<Mesh> loadOff( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromOff( in, settings );
+}
+
+Expected<Mesh> loadObj( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromObj( file, settings );
+}
+
+Expected<Mesh> loadObj( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromObj( in, settings );
+}
+
+Expected<Mesh> loadStl( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromAnyStl( file, settings );
+}
+
+Expected<Mesh> loadStl( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromAnyStl( in, settings );
+}
+
+Expected<Mesh> loadBinaryStl( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromBinaryStl( file, settings );
+}
+
+Expected<Mesh> loadBinaryStl( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromBinaryStl( in, settings );
+}
+
+Expected<Mesh> loadASCIIStl( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromASCIIStl( file, settings );
+}
+
+Expected<Mesh> loadASCIIStl( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromASCIIStl( in, settings );
+}
+
+Expected<Mesh> loadPly( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromPly( file, settings );
+}
+
+Expected<Mesh> loadPly( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromPly( in, settings );
+}
+
+Expected<Mesh> loadDxf( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromDxf( file, settings );
+}
+
+Expected<Mesh> loadDxf( std::istream& in, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromDxf( in, settings );
+}
+
+Expected<Mesh> loadMesh( const std::filesystem::path& file, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromAnySupportedFormat( file, settings );
+}
+
+Expected<Mesh> loadMesh( std::istream& in, const std::string& extension, const MeshLoadSettings& settings )
+{
+    return MeshLoad::fromAnySupportedFormat( in, extension, settings );
+}
+
 namespace MeshLoad
 {
 

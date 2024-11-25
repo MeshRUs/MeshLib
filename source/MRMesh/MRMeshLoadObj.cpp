@@ -877,22 +877,23 @@ Expected<std::vector<NamedMesh>> fromSceneObjFile( const char* data, size_t size
     return res;
 }
 
-Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::filesystem::path& path, std::string* warnings, ProgressCallback cb )
+Expected<LoadedObjects> loadObjectFromObj( const std::filesystem::path& file, const ProgressCallback& cb )
 {
-    return fromSceneObjFile( path, false, { .customXf = true, .countSkippedFaces = true, .callback = cb } )
+    return fromSceneObjFile( file, false, { .customXf = true, .countSkippedFaces = true, .callback = cb } )
     .transform( [&] ( std::vector<NamedMesh>&& results )
     {
         int totalSkippedFaceCount = 0;
         int totalDuplicatedVertexCount = 0;
         int holesCount = 0;
-        std::vector<std::shared_ptr<Object>> objects( results.size() );
-        for ( int i = 0; i < objects.size(); ++i )
+        LoadedObjects res;
+        res.objs.resize( results.size() );
+        for ( int i = 0; i < res.objs.size(); ++i )
         {
             auto& result = results[i];
 
             std::shared_ptr<ObjectMesh> objectMesh = std::make_shared<ObjectMesh>();
             if ( result.name.empty() )
-                objectMesh->setName( utf8string( path.stem() ) );
+                objectMesh->setName( utf8string( file.stem() ) );
             else
                 objectMesh->setName( std::move( result.name ) );
             objectMesh->select( true );
@@ -911,8 +912,7 @@ Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::fil
 
             if ( numEmptyTexture != 0 && numEmptyTexture != result.textureFiles.size() )
             {
-                if ( warnings )
-                    *warnings += " object has material with and without texture";
+                res.warnings += " object has material with and without texture";
             }
             else if ( numEmptyTexture == 0 && result.textureFiles.size() != 0 )
             {
@@ -933,8 +933,7 @@ Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::fil
                     {
                         crashTextureLoad = true;
                         objectMesh->setTextures( {} );
-                        if ( warnings )
-                            *warnings += image.error();
+                        res.warnings += image.error();
                         break;
                     }
                 }
@@ -953,7 +952,7 @@ Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::fil
 
             objectMesh->setXf( result.xf );
 
-            objects[i] = std::dynamic_pointer_cast< Object >( objectMesh );
+            res.objs[i] = std::dynamic_pointer_cast< Object >( objectMesh );
 
             holesCount += int( objectMesh->numHoles() );
 
@@ -961,31 +960,25 @@ Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromObj( const std::fil
             totalDuplicatedVertexCount += result.duplicatedVertexCount;
         }
 
-        if ( warnings )
+        if ( totalSkippedFaceCount )
         {
-            const auto makeWarningString = [] ( int skippedFaceCount, int duplicatedVertexCount, int holesCount )
-            {
-                std::string res;
-                if ( skippedFaceCount )
-                    res = fmt::format( "{} triangles were skipped as inconsistent with others.", skippedFaceCount );
-                if ( duplicatedVertexCount )
-                {
-                    if ( !res.empty() )
-                        res += '\n';
-                    res += fmt::format( "{} vertices were duplicated to make them manifold.", duplicatedVertexCount );
-                }
-                if ( holesCount )
-                {
-                    if ( !res.empty() )
-                        res += '\n';
-                    res += fmt::format( "The objects contains {} holes. Please consider using Fill Holes tool.", holesCount );
-                }
-                return res;
-            };
-            *warnings = makeWarningString( totalSkippedFaceCount, totalDuplicatedVertexCount, holesCount );
+            if ( !res.warnings.empty() )
+                res.warnings += '\n';
+            res.warnings = fmt::format( "{} triangles were skipped as inconsistent with others.", totalSkippedFaceCount );
         }
-
-        return objects;
+        if ( totalDuplicatedVertexCount )
+        {
+            if ( !res.warnings.empty() )
+                res.warnings += '\n';
+            res.warnings += fmt::format( "{} vertices were duplicated to make them manifold.", totalDuplicatedVertexCount );
+        }
+        if ( holesCount )
+        {
+            if ( !res.warnings.empty() )
+                res.warnings += '\n';
+            res.warnings += fmt::format( "The objects contain {} holes. Please consider using Fill Holes tool.", holesCount );
+        }
+        return res;
     } );
 }
 

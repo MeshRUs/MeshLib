@@ -304,7 +304,7 @@ namespace MR.DotNet
         /// \param refObj reference object and transformation from reference object space to global space
         /// \param fltSamples samples on floating object to find projections on the reference object during the algorithm
         /// \param refSamples samples on reference object to find projections on the floating object during the algorithm
-        public ICP(MeshOrPointsXf fltObj, MeshOrPointsXf refObj, BitSet fltSamples, BitSet refSamples)
+        public ICP(MeshOrPointsXf fltObj, MeshOrPointsXf refObj, VertBitSet fltSamples, VertBitSet refSamples)
         {
             mrICP_ = mrICPNewFromSamples(fltObj.mrMeshOrPointsXf_, refObj.mrMeshOrPointsXf_, fltSamples.bs_, refSamples.bs_);
         }

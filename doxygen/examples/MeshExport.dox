@@ -11,6 +11,9 @@ Export example of points and triangles from mesh (e.g. for rendering)
 - <b class="tab-title">Python</b>
 See a more relevant example \ref ExampleNumpy
 
+- <b class="tab-title">C</b>
+\include MeshExport.dox.c
+
 </div>
 
  */

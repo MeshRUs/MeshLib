@@ -492,14 +492,17 @@ bool dilateRegionByMetric( const MeshTopology & topology, const EdgeMetric & met
     for( VertId v : region )
         builder.addStart( v, 0 );
 
-    for ( int i = 0; !builder.done() && builder.doneDistance() <= dilation; ++i )
+    for ( int i = 0;; ++i )
     {
-        if ( !reportProgress( callback, [&]{ return builder.doneDistance() / dilation; }, i, 1024 ) )
-            return false;
+        const auto vinfo = builder.reachNext();
+        if ( !vinfo.v || vinfo.penalty > dilation )
+            break;
 
-        auto vinfo = builder.growOneEdge();
-        if ( vinfo.v )
-            region.autoResizeSet( vinfo.v );
+        region.autoResizeSet( vinfo.v );
+        builder.addOrgRingSteps( vinfo );
+
+        if ( !reportProgress( callback, [&]{ return vinfo.penalty / dilation; }, i, 1024 ) )
+            return false;
     }
 
     if ( callback && !callback( 1.0f ) )

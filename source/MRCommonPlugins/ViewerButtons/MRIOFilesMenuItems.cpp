@@ -324,7 +324,7 @@ void sOpenDICOMs( const std::filesystem::path & directory, const std::string & s
     ProgressBar::orderWithMainThreadPostProcessing( "Open DICOMs", [directory, simpleError, viewer = Viewer::instance()] () -> std::function<void()>
     {
         ProgressBar::nextTask( "Load DICOM Folder" );
-        auto loadRes = VoxelsLoad::loadDCMFolderTree( directory, 4, ProgressBar::callBackSetProgress );
+        auto loadRes = VoxelsLoad::loadDicomsFolderTreeAsVdb( directory, 4, ProgressBar::callBackSetProgress );
         if ( !loadRes.empty() )
         {
             bool anySuccess = std::any_of( loadRes.begin(), loadRes.end(), []( const auto & r ) { return r.has_value(); } );

@@ -4,7 +4,6 @@
 #include "MRMesh/MRExpected.h"
 #include "MRMesh/MRProgressCallback.h"
 #include <filesystem>
-#include <cstring>
 
 namespace MR
 {
@@ -12,9 +11,10 @@ class Object;
 
 struct SaveObjectSettings
 {
-    // if true then before saving, original files is renamed, and renamed back if saving fails
+    /// if true then before saving, original files is renamed, and renamed back if saving fails
     bool backupOriginalFile = false;
-    // callback function to set progress (for progress bar)
+
+    /// callback function to set progress (for progress bar)
     ProgressCallback callback;
 };
 

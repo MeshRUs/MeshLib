@@ -1,4 +1,4 @@
 --format=macros
---ignore-pch-flags
+--combine-types=cv,ref,ptr,smart_ptr
 --ignore ::
 --allow MR::Extra

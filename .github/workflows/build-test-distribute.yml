@@ -142,6 +142,9 @@ jobs:
       - name: Make Install Folder
         run: py -3.10 scripts\make_install_folder.py ${{needs.versioning-and-release-url.outputs.app_version}}
 
+      - name: Make Install Folder .NET
+        run: py -3.10 scripts\make_install_folder_dotnet.py ${{needs.versioning-and-release-url.outputs.app_version}}
+
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -153,11 +156,21 @@ jobs:
           msbuild -m example_plugin\example_plugin.sln -p:Configuration=Debug
           msbuild -m example_plugin\example_plugin.sln -p:Configuration=Release
 
+      - name: Archive .NET Distribution
+        run: py -3.10 scripts\zip_distribution.py install_dotnet MeshLibDotNetDist.zip
+
       - name: Upload Windows Distribution
         uses: actions/upload-artifact@v4
         with:
           name: DistributivesWin
           path: MeshLibDist.zip
+          retention-days: 1
+
+      - name: Upload .NET Distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: DistributivesDotNet
+          path: MeshLibDotNetDist.zip
           retention-days: 1
 
   create-nuget-package:
@@ -170,6 +183,16 @@ jobs:
     steps:
      - name: Checkout
        uses: actions/checkout@v4
+
+     - name: Download .NET Binaries Archive
+       uses: actions/download-artifact@v4
+       with:
+         pattern: DotNetArchive*
+         merge-multiple: true
+
+     - name: Extract Windows Binaries
+       run: |
+         tar -xvzf MREDist_DotNet.zip
 
      - name: Generate NuGet specification
        run: |
@@ -262,6 +285,12 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: WindowsArchive*
+          failOnError: false
+        # .NET
+      - name: Delete .NET Binaries Archive artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: DotNetArchive*
           failOnError: false
       # Distributives
       - name: Delete Distribution

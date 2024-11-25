@@ -44,6 +44,7 @@
     <ClInclude Include="MRImproveSampling.h" />
     <ClInclude Include="MRIterativeSampling.h" />
     <ClInclude Include="MRLevelOfDetails.h" />
+    <ClInclude Include="MRLoadedObjects.h" />
     <ClInclude Include="MRLocalTriangulations.h" />
     <ClInclude Include="MRMapping.h" />
     <ClInclude Include="MRMeshAttributesToUpdate.h" />

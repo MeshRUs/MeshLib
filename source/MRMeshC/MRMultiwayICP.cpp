@@ -106,16 +106,16 @@ void mrMultiwayICPSetParams( MRMultiwayICP* mwicp_, const MRICPProperties* prop_
     mwicp.setParams( prop );
 }
 
-float mrMultiWayICPGetMeanSqDistToPoint( const MRMultiwayICP* mwicp_, double* value )
+float mrMultiWayICPGetMeanSqDistToPoint( const MRMultiwayICP* mwicp_, const double* value )
 {
     ARG( mwicp );
-    return mwicp.getMeanSqDistToPoint( value );
+    return mwicp.getMeanSqDistToPoint( value ? std::optional( *value ) : std::nullopt );
 }
 
-float mrMultiWayICPGetMeanSqDistToPlane( const MRMultiwayICP* mwicp_, double* value )
+float mrMultiWayICPGetMeanSqDistToPlane( const MRMultiwayICP* mwicp_, const double* value )
 {
     ARG( mwicp );
-    return mwicp.getMeanSqDistToPlane( value );
+    return mwicp.getMeanSqDistToPlane( value ? std::optional( *value ) : std::nullopt );
 }
 
 size_t mrMultiWayICPGetNumSamples( const MRMultiwayICP* mwicp_ )

@@ -6,27 +6,23 @@ class Program
 {
     static void Main(string[] args)
     {
-        if (args.Length != 1 && args.Length != 2)
-        {           
-            Console.WriteLine("Usage: {0} INPUT [OUTPUT]", Assembly.GetExecutingAssembly().GetName().Name);
-            return;
-        }
-
         try
         {
-            string input = args[0];
-            string output = args.Length == 2 ? args[1] : args[0];
+            // Load mesh
+            var mesh = Mesh.FromAnySupportedFormat( "mesh.stl" );
 
-            var mesh = Mesh.FromAnySupportedFormat( input );
-
+            // Setup decimate parameters
             DecimateParameters dp = new DecimateParameters();
             dp.strategy = DecimateStrategy.MinimizeError;
             dp.maxError = 1e-5f * mesh.BoundingBox.Diagonal();
             dp.tinyEdgeLength = 1e-3f;
             dp.packMesh = true;
 
+            // Decimate mesh
             var result = MeshDecimate.Decimate(mesh, dp);
-            Mesh.ToAnySupportedFormat(mesh, output);
+
+            // Save result
+            Mesh.ToAnySupportedFormat(mesh, "decimated_mesh.stl");
         }
         catch (Exception e)
         {

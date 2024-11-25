@@ -9,7 +9,7 @@ set(EXAMPLES
   MeshBoolean
   MeshDecimate
   MeshFillHole
-  MeshImportExport
+  MeshLoadSave
   MeshOffset
   MeshResolveDegenerations
 )

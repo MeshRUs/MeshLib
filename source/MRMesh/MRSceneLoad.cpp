@@ -43,7 +43,7 @@ class SceneConstructor
 {
 public:
     // gather objects and error and warning messages
-    void process( const std::filesystem::path& path, Expected<std::vector<ObjectPtr>> res, const std::string& warningText )
+    void process( const std::filesystem::path& path, Expected<LoadedObjects> res )
     {
         const auto fileName = utf8string( path );
         spdlog::info( "Load file {} - {}", fileName, res.has_value() ? "success" : res.error().c_str() );
@@ -58,19 +58,19 @@ public:
                 errorSummary_ << res.error() << "\n";
             return;
         }
-        if ( !warningText.empty() )
+        if ( res.has_value() && !res->warnings.empty() )
         {
             // TODO: user-defined warning format
             if ( !isEmpty( warningSummary_ ) )
                 warningSummary_ << "\n\n";
-            if ( warningText.find( fileName ) == std::string::npos )
-                warningSummary_ << fileName << ":\n" << warningText << "\n";
+            if ( res->warnings.find( fileName ) == std::string::npos )
+                warningSummary_ << fileName << ":\n" << res->warnings << "\n";
             else
-                warningSummary_ << warningText << "\n";
+                warningSummary_ << res->warnings << "\n";
         }
 
         const auto prevObjectCount = loadedObjects_.size();
-        for ( auto& obj : *res )
+        for ( auto& obj : res->objs )
             if ( obj )
                 loadedObjects_.emplace_back( std::move( obj ) );
         if ( prevObjectCount != loadedObjects_.size() )
@@ -131,8 +131,7 @@ private:
 struct AsyncLoadContext
 {
     std::vector<std::filesystem::path> paths;
-    std::vector<std::string> warningTexts;
-    std::vector<Expected<std::vector<ObjectPtr>>> results;
+    std::vector<Expected<LoadedObjects>> results;
 
     std::atomic_size_t asyncCount{ 0 };
 
@@ -185,9 +184,7 @@ SceneLoadResult fromAnySupportedFormat( const std::vector<std::filesystem::path>
             continue;
 
         spdlog::info( "Loading file {}", utf8string( path ) );
-        std::string warningText;
-        auto result = loadObjectFromFile( path, &warningText, subprogress( callback, index, files.size() ) );
-        constructor.process( path, std::move( result ), std::move( warningText ) );
+        constructor.process( path, loadObjectFromFile( path, subprogress( callback, index, files.size() ) ) );
     }
     return constructor.construct();
 }
@@ -200,7 +197,6 @@ void asyncFromAnySupportedFormat( const std::vector<std::filesystem::path>& file
     std::erase_if( ctx->paths, [] ( auto&& path ) { return path.empty(); } );
 
     const auto count = ctx->paths.size();
-    ctx->warningTexts.resize( count );
     ctx->results.resize( count, unexpected( "Uninitialized" ) );
 
     size_t syncIndex = 0;
@@ -215,7 +211,7 @@ void asyncFromAnySupportedFormat( const std::vector<std::filesystem::path>& file
         else
         {
             spdlog::info( "Loading file {}", utf8string( path ) );
-            ctx->results[index] = loadObjectFromFile( path, &ctx->warningTexts[index], subprogress( progressCallback, syncIndex++, count ) );
+            ctx->results[index] = loadObjectFromFile( path, subprogress( progressCallback, syncIndex++, count ) );
         }
     }
     assert( syncIndex + asyncBitSet.count() == count );
@@ -227,7 +223,7 @@ void asyncFromAnySupportedFormat( const std::vector<std::filesystem::path>& file
     {
         SceneConstructor constructor;
         for ( auto index = 0ull; index < count; ++index )
-            constructor.process( ctx->paths[index], ctx->results[index], ctx->warningTexts[index] );
+            constructor.process( ctx->paths[index], ctx->results[index] );
         postLoadCallback( constructor.construct() );
     };
 
@@ -244,7 +240,7 @@ void asyncFromAnySupportedFormat( const std::vector<std::filesystem::path>& file
         assert( asyncLoader );
         const auto callback = ctx->progressCallbackFor( index );
         spdlog::info( "Async loading file {}", utf8string( path ) );
-        asyncLoader( path, &ctx->warningTexts[index], [ctx, index, postLoad, callback] ( Expected<std::vector<ObjectPtr>> result )
+        asyncLoader( path, [ctx, index, postLoad, callback] ( Expected<LoadedObjects> result )
         {
             ctx->results[index] = std::move( result );
             reportProgress( callback, 1.00f );

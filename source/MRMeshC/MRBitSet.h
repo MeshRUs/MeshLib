@@ -49,6 +49,9 @@ MRMESHC_API void mrBitSetAutoResizeSet( MRBitSet* bs, size_t pos, bool value );
 /// creates a new bitset including a's bits and excluding b's bits
 MRMESHC_API MRBitSet* mrBitSetSub( const MRBitSet* a, const MRBitSet* b );
 
+/// creates a new bitset including both a's bits and b's bits
+MRMESHC_API MRBitSet* mrBitSetOr( const MRBitSet* a, const MRBitSet* b );
+
 /// deallocates a BitSet object
 MRMESHC_API void mrBitSetFree( MRBitSet* bs );
 

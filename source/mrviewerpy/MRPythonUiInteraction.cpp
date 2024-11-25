@@ -31,7 +31,7 @@ namespace
         EntryType type;
     };
 
-    static std::string listKeys( const MR::UI::TestEngine::GroupEntry& group )
+    std::string listKeys( const MR::UI::TestEngine::GroupEntry& group )
     {
         std::string ret;
         bool first = true;
@@ -56,7 +56,7 @@ namespace
             auto iter = cur->elems.find( segment );
             if ( iter == cur->elems.end() )
                 throw std::runtime_error( fmt::format( "No such entry: `{}`. Known entries are: {}.", segment, listKeys( *cur ) ) );
-            cur = &std::get<TestEngine::GroupEntry>( iter->second.value );
+            cur = MR::expectedValueOrThrow( iter->second.getAs<TestEngine::GroupEntry>( segment ) );
         }
         return *cur;
     }
@@ -105,7 +105,7 @@ namespace
             auto iter = group.elems.find( path.back() );
             if ( iter == group.elems.end() )
                 throw std::runtime_error( fmt::format( "No such entry: `{}`. Known entries are: {}.", path.back(), listKeys( group ) ) );
-            std::get<TestEngine::ButtonEntry>( iter->second.value ).simulateClick = true;
+            MR::expectedValueOrThrow( iter->second.getAs<TestEngine::ButtonEntry>( path.back() ) )->simulateClick = true;
         } );
         for ( int i = 0; i < MR::getViewerInstance().forceRedrawMinimumIncrementAfterEvents; ++i )
             MR::CommandLoop::runCommandFromGUIThread( [] {} ); // wait frame
@@ -144,7 +144,7 @@ namespace
             auto iter = group.elems.find( path.back() );
             if ( iter == group.elems.end() )
                 throw std::runtime_error( fmt::format( "No such entry: `{}`. Known entries are: {}.", path.back(), listKeys( group ) ) );
-            const auto& entry = std::get<TestEngine::ValueEntry>( iter->second.value );
+            const auto& entry = *MR::expectedValueOrThrow( iter->second.getAs<TestEngine::ValueEntry>( path.back() ) );
 
             if constexpr ( std::is_same_v<T, std::string> )
             {
@@ -218,7 +218,7 @@ namespace
             auto iter = group.elems.find( path.back() );
             if ( iter == group.elems.end() )
                 throw std::runtime_error( fmt::format( "No such entry: `{}`. Known entries are: {}.", path.back(), listKeys( group ) ) );
-            const auto& entry = std::get<TestEngine::ValueEntry>( iter->second.value );
+            const auto& entry = *MR::expectedValueOrThrow( iter->second.getAs<TestEngine::ValueEntry>( path.back() ) );
 
             T simulatedValue{};
 

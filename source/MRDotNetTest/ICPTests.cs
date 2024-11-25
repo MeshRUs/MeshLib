@@ -56,8 +56,8 @@ namespace MR.DotNet.Test
             MeshOrPointsXf flt = new MeshOrPointsXf(torusMove, xf );
             MeshOrPointsXf refer = new MeshOrPointsXf( torusRef, new AffineXf3f());
 
-            var fltSamples = torusMove.ValidPoints as BitSet;
-            var referSamples = torusRef.ValidPoints as BitSet;
+            var fltSamples = torusMove.ValidPoints as VertBitSet;
+            var referSamples = torusRef.ValidPoints as VertBitSet;
             Assert.That(fltSamples is not null);
             Assert.That(referSamples is not null);
 

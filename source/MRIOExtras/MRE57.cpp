@@ -269,13 +269,14 @@ Expected<PointCloud> fromE57( std::istream&, const PointsLoadSettings& )
 
 MR_ADD_POINTS_LOADER( IOFilter( "E57 (.e57)", "*.e57" ), fromE57 )
 
-Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromE57( const std::filesystem::path& path, std::string*, ProgressCallback cb )
+Expected<LoadedObjects> loadObjectFromE57( const std::filesystem::path& path, const ProgressCallback& cb )
 {
     return fromSceneE57File( path, { .progress = std::move( cb ) } )
     .transform( [&path] ( std::vector<NamedCloud>&& nclouds )
     {
-        std::vector<std::shared_ptr<Object>> objects( nclouds.size() );
-        for ( int i = 0; i < objects.size(); ++i )
+        LoadedObjects res;
+        res.objs.resize( nclouds.size() );
+        for ( int i = 0; i < res.objs.size(); ++i )
         {
             auto objectPoints = std::make_shared<ObjectPoints>();
             if ( nclouds[i].name.empty() || nclouds.size() <= 1 ) // if only one cloud in file, then take name from file
@@ -290,9 +291,9 @@ Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromE57( const std::fil
                 objectPoints->setVertsColorMap( std::move( nclouds[i].colors ) );
                 objectPoints->setColoringType( ColoringType::VertsColorMap );
             }
-            objects[i] = std::dynamic_pointer_cast< Object >( std::move( objectPoints ) );
+            res.objs[i] = std::dynamic_pointer_cast< Object >( std::move( objectPoints ) );
         }
-        return objects;
+        return res;
     } );
 }
 

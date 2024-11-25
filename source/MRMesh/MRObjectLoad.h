@@ -6,6 +6,7 @@
 #include "MRExpected.h"
 #include "MRMeshLoadSettings.h"
 #include "MRUniqueTemporaryFolder.h"
+#include "MRLoadedObjects.h"
 
 #include <filesystem>
 
@@ -42,13 +43,10 @@ MRMESH_API Expected<ObjectDistanceMap> makeObjectDistanceMapFromFile( const std:
 MRMESH_API Expected<ObjectGcode> makeObjectGcodeFromFile( const std::filesystem::path& file, ProgressCallback callback = {} );
 
 /**
- * \brief load object (mesh, lines, points, voxels or scene) from file
- * \param loadWarn - string that collect warning messages
+ * \brief load all objects (or any type: mesh, lines, points, voxels or scene) from file
  * \param callback - callback function to set progress (for progress bar)
- * \return empty string if no error or error text
  */
-MRMESH_API Expected<std::vector<std::shared_ptr<Object>>> loadObjectFromFile( const std::filesystem::path& filename,
-                                                                                           std::string* loadWarn = nullptr, ProgressCallback callback = {} );
+MRMESH_API Expected<LoadedObjects> loadObjectFromFile( const std::filesystem::path& filename, const ProgressCallback& callback = {} );
 
 // check if there are any supported files folder and subfolders
 MRMESH_API bool isSupportedFileInSubfolders( const std::filesystem::path& folder );

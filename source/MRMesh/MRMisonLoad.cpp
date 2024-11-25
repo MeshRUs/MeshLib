@@ -43,15 +43,14 @@ Expected<std::shared_ptr<MR::Object>> fromSceneMison( std::istream& in,
             return invalidFormatError;
         auto path = pathFromUtf8( el["Filename"].asString() );
 
-        std::string localWornStr;
-        auto loadRes = loadObjectFromFile( path, loadWarn ? &localWornStr : nullptr, subprogress( callback, i / float( numFiles ), ( i + 1 ) / float( numFiles ) ) );
+        auto loadRes = loadObjectFromFile( path, subprogress( callback, i / float( numFiles ), ( i + 1 ) / float( numFiles ) ) );
         if ( !loadRes.has_value() )
             return unexpected( loadRes.error() + ": " + utf8string( path ) );
 
-        if ( loadRes->empty() )
+        if ( loadRes->objs.empty() )
             continue;
-        if ( loadWarn && !localWornStr.empty() )
-            *loadWarn += ( localWornStr + "\n" );
+        if ( loadWarn && !loadRes->warnings.empty() )
+            *loadWarn += ( loadRes->warnings + "\n" );
 
         AffineXf3f xf;
         if ( el["XF"].isObject() )
@@ -61,13 +60,13 @@ Expected<std::shared_ptr<MR::Object>> fromSceneMison( std::istream& in,
         if ( hasName )
         {
             name = el["Name"].asString();
-            if ( loadRes->size() == 1 )
-                loadRes.value().front()->setName(name);
+            if ( loadRes->objs.size() == 1 )
+                loadRes->objs.front()->setName(name);
             else
-                for ( auto& obj : *loadRes )
+                for ( auto& obj : loadRes->objs )
                     obj->setName( name + ": " + obj->name() );
         }
-        for ( auto& obj : *loadRes )
+        for ( auto& obj : loadRes->objs )
         {
             obj->setXf( xf * obj->xf() );
             rootObj->addChild( obj );

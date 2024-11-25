@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MRMesh/MRExpected.h"
+#include "MRPch/MRFmt.h"
 #include "MRViewer/exports.h"
 
 #include <cstdint>
@@ -97,6 +99,8 @@ struct ButtonEntry
 {
     // Set this to true to simulate a button click.
     mutable bool simulateClick = false;
+
+    static constexpr std::string_view kindName = "button";
 };
 
 // For sliders, drags, etc.
@@ -132,12 +136,16 @@ struct ValueEntry
     };
     using ValueVar = std::variant<Value<std::int64_t>, Value<std::uint64_t>, Value<double>, Value<std::string>>;
     ValueVar value;
+
+    static constexpr std::string_view kindName = "value";
 };
 
 struct GroupEntry
 {
     // Using `std::map` over `std::unordered_map` to be able to search by `std::string_view` keys directly.
     std::map<std::string, Entry, std::less<>> elems;
+
+    static constexpr std::string_view kindName = "group";
 };
 
 struct Entry
@@ -147,6 +155,31 @@ struct Entry
     // Mostly for internal use.
     // If this is false, the entry will be removed on the next frame.
     bool visitedOnThisFrame = false;
+
+    // Returns a string describing the type currently stored in `value`, which is `T::kindName`.
+    [[nodiscard]] MRVIEWER_API std::string_view getKindName() const;
+
+    // Calls `std::get<T>(value)`, returns a user-friendly error on failure.
+    // The returned pointer is never null.
+    // If `selfName` is specified, it's added to the error message as the name of this entry.
+    template <typename T>
+    [[nodiscard]] Expected<T *> getAs( std::string_view selfName = {} )
+    {
+        Expected<T *> ret = std::get_if<T>( &value );
+        if ( !*ret )
+        {
+            if ( selfName.empty() )
+                ret = unexpected( fmt::format( "Expected UI entity to be a `{}` but got a `{}`.", T::kindName, getKindName() ) );
+            else
+                ret = unexpected( fmt::format( "Expected UI entity `{}` to be a `{}` but got a `{}`.", selfName, T::kindName, getKindName() ) );
+        }
+        return ret;
+    }
+    template <typename T>
+    [[nodiscard]] Expected<const T *> getAs( std::string_view selfName = {} ) const
+    {
+        return const_cast<Entry *>( this )->template getAs<T>( selfName );
+    }
 };
 
 // Returns the current entry tree.

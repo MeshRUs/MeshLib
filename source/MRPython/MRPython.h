@@ -223,12 +223,29 @@ struct PythonFunctionAdder
 
 // overload `toString` functoion to throw exception from custom `Expected::error` type
 template<typename E>
-void throwExceptionFromExpected(const E& err)
+[[noreturn]] void throwExceptionFromExpected(const E& err)
 {
     if constexpr (std::is_nothrow_convertible<E, std::string>::value)
-         throw std::runtime_error(err);
+        throw std::runtime_error(err);
     else
         throw std::runtime_error(toString(err));
+}
+
+// Like `e.value()`, but throws using `throwExceptionFromExpected` (which is better, because it allows Python to see the proper error message), and also supports `T == void`.
+template <typename T>
+[[nodiscard]] decltype(auto) expectedValueOrThrow( T&& e )
+{
+    if ( e )
+    {
+        if constexpr ( std::is_void_v<typename std::remove_cvref_t<T>::value_type> )
+            return;
+        else
+            return *std::forward<T>( e );
+    }
+    else
+    {
+        throwExceptionFromExpected( e.error() );
+    }
 }
 
 template<typename R, typename E, typename... Args>

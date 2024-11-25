@@ -15,10 +15,10 @@ jobs:
         with:
           ref: "master"
 
-      - name: Search for Tag in Readme
+      - name: Search for Tag in build-test-windows.yml
         id: extract-tag
         run: |
-          current_vcpkg_tag=$(awk '/^    cd vcpkg/{getline; if ($0 ~ /^    git checkout (\S+)/) print gensub(/^    git checkout (\S+)/, "\\1", "g", $0)}' ./readme.md)
+          current_vcpkg_tag=$(awk -F": '" '/VCPKG-VERSION/ {print $2}' .github/workflows/build-test-windows.yml | tr -d "'")
           echo "current_vcpkg_tag=${current_vcpkg_tag}" >> $GITHUB_OUTPUT
           echo "current vcpkg tag: ${current_vcpkg_tag}"
         shell: bash

@@ -9,7 +9,7 @@ class Program
     {
         if (args.Length != 2 && args.Length != 3)
         {           
-            Console.WriteLine("Usage: {0} OFFSET_VALUE INPUT [OUTPUT]", Assembly.GetExecutingAssembly().GetName().Name);
+            Console.WriteLine("Usage: {0} OFFSET_VALUE", Assembly.GetExecutingAssembly().GetName().Name);
             return;
         }
 
@@ -19,18 +19,19 @@ class Program
                       System.Globalization.NumberStyles.AllowThousands,
                       CultureInfo.InvariantCulture);
 
-            string input = args[1];
-            string output = args.Length == 3 ? args[2] : args[1];
-
+            // Load mesh
             MeshPart mp = new MeshPart();
-            mp.mesh = Mesh.FromAnySupportedFormat( args[1] );
+            mp.mesh = Mesh.FromAnySupportedFormat( "mesh.stl" );
 
+            // Setup parameters
             OffsetParameters op = new OffsetParameters();
             op.voxelSize = Offset.SuggestVoxelSize(mp, 1e6f);
 
+            // Make offset mesh
             var result = Offset.OffsetMesh(mp, offsetValue, op);
 
-            Mesh.ToAnySupportedFormat(result, output);
+            // Save result
+            Mesh.ToAnySupportedFormat(result, "mesh_offset.stl");
         }
         catch (Exception e)
         {

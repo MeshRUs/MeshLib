@@ -60,7 +60,7 @@ RUN export DEBIAN_FRONTEND=noninteractive; \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-#update cmake
+# update cmake
 RUN apt remove --purge --auto-remove -y cmake \
  && apt update \
  && apt install -y software-properties-common lsb-release \

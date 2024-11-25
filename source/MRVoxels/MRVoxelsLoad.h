@@ -5,6 +5,7 @@
 
 #include "MRMesh/MRIOFormatsRegistry.h"
 #include "MRMesh/MRObject.h"
+#include <MRMesh/MRLoadedObjects.h>
 
 #include <filesystem>
 
@@ -90,6 +91,6 @@ MR_FORMAT_REGISTRY_EXTERNAL_DECL( MRVOXELS_API, VoxelsLoader )
 /// loads voxels from given file in new object
 MRVOXELS_API Expected<std::vector<std::shared_ptr<ObjectVoxels>>> makeObjectVoxelsFromFile( const std::filesystem::path& file, ProgressCallback callback = {} );
 
-MRVOXELS_API Expected<std::vector<std::shared_ptr<Object>>> makeObjectFromVoxelsFile( const std::filesystem::path& file, std::string* warnings = nullptr, ProgressCallback callback = {} );
+MRVOXELS_API Expected<LoadedObjects> makeObjectFromVoxelsFile( const std::filesystem::path& file, const ProgressCallback& callback = {} );
 
 }

@@ -56,5 +56,17 @@ namespace MR.DotNet.Test
             Assert.That( c.Test( 5 ) );
             Assert.That( !c.Test( 6 ) );
         }
+
+        [Test]
+        public void TestUnion()
+        {
+            var a = new MR.DotNet.BitSet( 10 );
+            a.Set( 5 );            
+            var b = new MR.DotNet.BitSet( 10 );
+            b.Set( 6 );
+            var c = a | b;
+            Assert.That( c.Test( 5 ) );
+            Assert.That( c.Test( 6 ) );
+        }
     }
 }

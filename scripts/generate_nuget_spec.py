@@ -58,12 +58,14 @@ f.write('\t\t<file src="./macos/MeshInspector_icon.png" target="images/"></file>
 f.write('\t\t<file src="./LICENSE.txt" target=""></file>\n')
 f.write('\t\t<file src="./readme_dotnet.md" target="docs/"></file>\n')
 folder = os.walk(path_to_objects)
+anyDllIsFound = False
 for address, dirs, files in folder:
 	for file in files:
 		if file.startswith('nunit'):
 			continue
             
 		if (file.endswith('.dll') and not any(map(file.startswith, excluded_modules)) and not file.startswith('System') and not file.startswith('MRDotNet')):
+			anyDllIsFound = True
 			src = os.path.join(address,file)
 			print(src)
 			f.write('\t\t<file src="./source/x64/Release/')
@@ -84,7 +86,10 @@ for address, dirs, files in folder:
 			f.write('\t\t<file src="./source/x64/Release/')
 			f.write(file)
 			f.write('" target="lib/netstandard2.0/"></file>\n')
-            
+
+if not anyDllIsFound:
+    raise Exception("No DLLs found")
+    
 fTargets.write('\t</ItemGroup>\n')
 fTargets.write('</Project>\n')
 fTargets.close()

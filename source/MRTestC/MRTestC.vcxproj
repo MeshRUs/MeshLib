@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MRBitSet.c" />
+    <ClCompile Include="MRExpandShrink.c" />
     <ClCompile Include="MRFixSelfIntersections.c" />
     <ClCompile Include="MRMesh.c" />
     <ClCompile Include="MRMeshBoolean.c" />
@@ -21,6 +22,7 @@
     <ClCompile Include="MRMeshDecimate.c" />
     <ClCompile Include="MRMeshFillHole.c" />
     <ClCompile Include="MRMeshNormals.c" />
+    <ClCompile Include="MRPointCloud.c" />
     <ClCompile Include="MRTestCApp.c" />
   </ItemGroup>
   <ItemGroup>
@@ -30,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MRBitSet.h" />
+    <ClInclude Include="MRExpandShrink.h" />
     <ClInclude Include="MRFixSelfIntersections.h" />
     <ClInclude Include="MRMesh.h" />
     <ClInclude Include="MRMeshBoolean.h" />
@@ -39,6 +42,7 @@
     <ClInclude Include="MRMeshDecimate.h" />
     <ClInclude Include="MRMeshFillHole.h" />
     <ClInclude Include="MRMeshNormals.h" />
+    <ClInclude Include="MRPointCloud.h" />
     <ClInclude Include="TestMacros.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

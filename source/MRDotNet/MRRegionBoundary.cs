@@ -119,20 +119,108 @@ namespace MR.DotNet
 
         [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
         unsafe private static extern MREdgeLoop* mrTrackRightBoundaryLoop(IntPtr topology, EdgeId e0, IntPtr region);
-        
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentFacesFromVerts( IntPtr topology, IntPtr region );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentFacesFromEdges( IntPtr topology, IntPtr region );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentVertsFromFaces( IntPtr topology, IntPtr faces );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentVertsFromEdges( IntPtr topology, IntPtr edges );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetInnerVertsFromFaces( IntPtr topology, IntPtr region );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetInnerVertsFromEdges( IntPtr topology, IntPtr edges );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetInnerFacesFromVerts( IntPtr topology, IntPtr verts );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentEdgesFromFaces( IntPtr topology, IntPtr faces );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetIncidentEdgesFromEdges( IntPtr topology, IntPtr edges );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetInnerEdgesFromVerts( IntPtr topology, IntPtr verts );
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrGetInnerEdgesFromFaces( IntPtr topology, IntPtr region );
+
         /// returns closed loop of region boundary starting from given region boundary edge (region faces on the right, and not-region faces or holes on the left);
         /// if more than two boundary edges connect in one vertex, then the function makes the most abrupt turn to left
-        unsafe public static EdgeLoop TrackRightBoundaryLoop( Mesh mesh, EdgeId e0, BitSet? region = null )
+        unsafe public static EdgeLoop TrackRightBoundaryLoop( Mesh mesh, EdgeId e0, FaceBitSet? region = null )
         {
             var mrLoop = mrTrackRightBoundaryLoop(mesh.meshTopology_, e0, region is null ? (IntPtr)null : region.bs_);
             return new EdgeLoop(mrLoop);
         }
         /// returns all region boundary loops;
         /// every loop has region faces on the right, and not-region faces or holes on the left
-        public static EdgeLoops FindRightBoundary( Mesh mesh, BitSet? region = null )
+        public static EdgeLoops FindRightBoundary( Mesh mesh, FaceBitSet? region = null )
         {
             var mrLoops = mrFindRightBoundary(mesh.meshTopology_, region is null ? (IntPtr)null : region.bs_);
             return new EdgeLoops(mrLoops);
+        }
+        /// composes the set of all faces incident to given vertices
+        public static FaceBitSet GetIncidentFaces(Mesh mesh, VertBitSet region)
+        {
+            return new FaceBitSet(mrGetIncidentFacesFromVerts(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all faces incident to given edges
+        public static FaceBitSet GetIncidentFaces(Mesh mesh, UndirectedEdgeBitSet region)
+        {
+            return new FaceBitSet(mrGetIncidentFacesFromEdges(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all vertices incident to given faces
+        public static VertBitSet GetIncidentVerts(Mesh mesh, FaceBitSet region)
+        {
+            return new VertBitSet(mrGetIncidentVertsFromFaces(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all vertices incident to given edges
+        public static VertBitSet GetIncidentVerts(Mesh mesh, UndirectedEdgeBitSet region)
+        {
+            return new VertBitSet(mrGetIncidentVertsFromEdges(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all vertices not on the boundary of a hole and with all their adjacent faces in given set
+        public static VertBitSet GetInnerVerts(Mesh mesh, FaceBitSet region)
+        {
+            return new VertBitSet(mrGetInnerVertsFromFaces(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all vertices with all their edges in given set
+        public static VertBitSet GetInnerVerts(Mesh mesh, UndirectedEdgeBitSet region)
+        {
+            return new VertBitSet(mrGetInnerVertsFromEdges(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all faces with all their vertices in given set
+        public static FaceBitSet GetInnerFaces(Mesh mesh, VertBitSet region)
+        {
+            return new FaceBitSet(mrGetInnerFacesFromVerts(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all edges with all their vertices in given set
+        public static UndirectedEdgeBitSet GetInnerEdges(Mesh mesh, VertBitSet region)
+        {
+            return new UndirectedEdgeBitSet(mrGetInnerEdgesFromVerts(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all edges having both left and right in given region
+        public static UndirectedEdgeBitSet GetInnerEdges(Mesh mesh, FaceBitSet region)
+        {
+            return new UndirectedEdgeBitSet(mrGetInnerEdgesFromFaces(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all undirected edges, having a face from given set from one of two sides
+        public static UndirectedEdgeBitSet GetIncidentEdges(Mesh mesh, FaceBitSet region)
+        {
+            return new UndirectedEdgeBitSet(mrGetIncidentEdgesFromFaces(mesh.meshTopology_, region.bs_));
+        }
+        /// composes the set of all undirected edges, having at least one common vertex with an edge from given set
+        public static UndirectedEdgeBitSet GetIncidentEdges(Mesh mesh, UndirectedEdgeBitSet region)
+        {
+            return new UndirectedEdgeBitSet(mrGetIncidentEdgesFromEdges(mesh.meshTopology_, region.bs_));
         }
     }
 }

@@ -94,6 +94,10 @@ MRMESH_API BooleanResult boolean( const Mesh& meshA, const Mesh& meshB, BooleanO
 MRMESH_API BooleanResult boolean( Mesh&& meshA, Mesh&& meshB, BooleanOperation operation,
                                   const BooleanParameters& params = {} );
 
+
+/// returns intersection contours of given meshes
+MRMESH_API Contours3f findIntersectionContours( const Mesh& meshA, const Mesh& meshB, const AffineXf3f* rigidB2A = nullptr );
+
 /// vertices and points representing mesh intersection result
 struct BooleanResultPoints
 {

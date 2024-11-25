@@ -201,7 +201,7 @@ private:
 };
 
 void updateGroupPairs( ICPGroupPairs& pairs, const ICPObjects& objs,
-    ICPGroupProjector srcProjector, ICPGroupProjector tgtProjector, 
+    ICPGroupProjector srcProjector, ICPGroupProjector tgtProjector,
     float cosThreshold, float distThresholdSq, bool mutualClosest )
 {
     MR_TIMER;
@@ -291,7 +291,7 @@ Vector<AffineXf3f, ObjId> MultiwayICP::calculateTransformations( ProgressCallbac
     {
         const bool pt2pt = ( prop_.method == ICPMethod::Combined && iter_ < 3 )
             || prop_.method == ICPMethod::PointToPoint;
-        
+
         bool res = doIteration_( !pt2pt );
 
         if ( perIterationCb_ )
@@ -396,7 +396,7 @@ bool MultiwayICP::resamplePoints( const MultiwayICPSamplingParameters& samplingP
     return reserveUpperLayerPairs_( std::move( *samplesPerUnit ), subprogress( samplingParams.cb, maxProgress2, 1.0f ) );
 }
 
-float MultiwayICP::getMeanSqDistToPoint( double* value ) const
+float MultiwayICP::getMeanSqDistToPoint( std::optional<double> value ) const
 {
     NumSum numSum;
     for ( ICPLayer l( 0 ); l < pairsGridPerLayer_.size(); ++l )
@@ -419,7 +419,7 @@ float MultiwayICP::getMeanSqDistToPoint( double* value ) const
     return numSum.rootMeanSqF();
 }
 
-float MultiwayICP::getMeanSqDistToPlane( double* value ) const
+float MultiwayICP::getMeanSqDistToPlane( std::optional<double> value ) const
 {
     NumSum numSum;
     for ( ICPLayer l( 0 ); l < pairsGridPerLayer_.size(); ++l )
@@ -518,7 +518,7 @@ void MultiwayICP::setupLayers_( MultiwayICPSamplingParameters::CascadeMode mode 
         cascadeIndexer_ = std::make_unique<SeqCascade>( int( objs_.size() ), maxGroupSize_ );
     else if ( mode == MultiwayICPSamplingParameters::CascadeMode::AABBTreeBased )
         cascadeIndexer_ = std::make_unique<AABBTreeCascade>( objs_, maxGroupSize_ );
-    
+
     assert( cascadeIndexer_ );
     pairsGridPerLayer_.resize( cascadeIndexer_->getNumLayers() );
 }
@@ -580,7 +580,7 @@ std::optional<MultiwayICP::LayerSamples> MultiwayICP::resampleUpperLayers_( Prog
         {
             const auto& layerLeaves = cascadeIndexer_->getElementLeaves( l, gId );
             Vector<ModelPointsData, ObjId> groupData;
-            groupData.reserve( layerLeaves.count() );            
+            groupData.reserve( layerLeaves.count() );
             for ( ObjId oId : layerLeaves )
             {
                 const auto& obj = objs_[oId];
@@ -664,7 +664,7 @@ bool MultiwayICP::updateLayerPairs_( ICPLayer l, ProgressCallback cb )
         {
             const auto& leaves = cascadeIndexer_->getElementLeaves( l, gI );
             maps[gI].reserve( leaves.count() );
-            ICPObjects leafObjs; 
+            ICPObjects leafObjs;
             leafObjs.reserve( leaves.count() );
             for ( auto leaf : leaves )
             {

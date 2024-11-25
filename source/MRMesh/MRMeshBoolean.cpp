@@ -145,6 +145,14 @@ BooleanResult boolean( Mesh&& meshA, Mesh&& meshB, BooleanOperation operation, c
     return booleanImpl( std::move( meshA ), std::move( meshB ), operation, params, {} );
 }
 
+Contours3f findIntersectionContours( const Mesh& meshA, const Mesh& meshB, const AffineXf3f* rigidB2A /*= nullptr */ )
+{
+    auto converters = getVectorConverters( meshA, meshB, rigidB2A );
+    auto intersections = findCollidingEdgeTrisPrecise( meshA, meshB, converters.toInt, rigidB2A );
+    auto contours = orderIntersectionContours( meshA.topology, meshB.topology, intersections );
+    return extractIntersectionContours( meshA, meshB, contours, converters, rigidB2A );
+}
+
 BooleanResult booleanImpl( Mesh&& meshA, Mesh&& meshB, BooleanOperation operation, const BooleanParameters& params, BooleanInternalParameters intParams )
 {
     MR_TIMER;

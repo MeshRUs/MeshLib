@@ -198,7 +198,7 @@ namespace MR.DotNet
         #region properties
 
         /// returns faces bitset of result mesh corresponding input one
-        public BitSet FaceMap( BitSet oldBS, MapObject obj)
+        public FaceBitSet FaceMap( FaceBitSet oldBS, MapObject obj)
         {
             if ( maps_ is null )
                 maps_ = new BooleanMaps?[2];
@@ -208,10 +208,10 @@ namespace MR.DotNet
                 maps_[(int)obj] = new BooleanMaps( mrBooleanResultMapperGetMaps(mapper_, obj) );
             }
 
-            return new BitSet(mrBooleanResultMapperMapFaces(mapper_, oldBS.bs_, obj));
+            return new FaceBitSet(mrBooleanResultMapperMapFaces(mapper_, oldBS.bs_, obj));
         }
         /// Returns vertices bitset of result mesh corresponding input one
-        public BitSet VertMap( BitSet oldBS, MapObject obj)
+        public VertBitSet VertMap( VertBitSet oldBS, MapObject obj)
         {
             if (maps_ is null)
                 maps_ = new BooleanMaps?[2];
@@ -221,12 +221,12 @@ namespace MR.DotNet
                 maps_[(int)obj] = new BooleanMaps(mrBooleanResultMapperGetMaps(mapper_, obj));
             }
 
-            return new BitSet(mrBooleanResultMapperMapVerts(mapper_, oldBS.bs_, obj));
+            return new VertBitSet(mrBooleanResultMapperMapVerts(mapper_, oldBS.bs_, obj));
         }
         /// Returns only new faces that are created during boolean operation
-        public BitSet NewFaces()
+        public FaceBitSet NewFaces()
         {
-            return new BitSet(mrBooleanResultMapperNewFaces(mapper_));
+            return new FaceBitSet(mrBooleanResultMapperNewFaces(mapper_));
         }
 
         public BooleanMaps GetMaps( MapObject obj)
@@ -243,7 +243,7 @@ namespace MR.DotNet
             return res;
         }
         /// returns updated oldBS leaving only faces that has corresponding ones in result mesh
-        public BitSet FilteredOldFaceBitSet( BitSet oldBS, MapObject obj)
+        public FaceBitSet FilteredOldFaceBitSet( FaceBitSet oldBS, MapObject obj)
         {
             if (maps_ is null)
                 maps_ = new BooleanMaps?[2];
@@ -253,7 +253,7 @@ namespace MR.DotNet
                 maps_[(int)obj] = new BooleanMaps(mrBooleanResultMapperGetMaps(mapper_, obj));
             }
 
-            return new BitSet(mrBooleanResultMapperFilteredOldFaceBitSet(mapper_, oldBS.bs_, obj));
+            return new FaceBitSet(mrBooleanResultMapperFilteredOldFaceBitSet(mapper_, oldBS.bs_, obj));
         }
 
         internal IntPtr Mapper { get { return mapper_; } }

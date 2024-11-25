@@ -454,7 +454,7 @@ Expected<DicomVolume> loadSingleDicomFolder( std::vector<std::filesystem::path>&
         return unexpected( "Loading canceled" );
 
     if ( files.empty() )
-        return unexpected( "loadDCMFolder: there is no dcm file" );
+        return unexpected( "loadDicomFolderAsVdb: there is no dcm file" );
 
     SimpleVolumeMinMax data;
     data.voxelSize = Vector3f();
@@ -473,7 +473,7 @@ Expected<DicomVolume> loadSingleDicomFolder( std::vector<std::filesystem::path>&
 
     auto firstRes = loadSingleFile( files.front(), data, 0 );
     if ( !firstRes.success )
-        return unexpected( "loadDCMFolder: error loading first file \"" + utf8string( files.front() ) + "\"" );
+        return unexpected( "loadDicomFolderAsVdb: error loading first file \"" + utf8string( files.front() ) + "\"" );
     data.min = firstRes.min;
     data.max = firstRes.max;
     size_t dimXY = data.dims.x * data.dims.y;
@@ -565,7 +565,7 @@ Expected<SeriesMap,std::string> extractDCMSeries( const std::filesystem::path& p
 {
     std::error_code ec;
     if ( !std::filesystem::is_directory( path, ec ) )
-        return { unexpected( "loadDCMFolder: path is not directory" ) };
+        return { unexpected( "loadDicomFolderAsVdb: path is not directory" ) };
 
     int filesNum = 0;
     std::vector<std::filesystem::path> files;
@@ -627,11 +627,11 @@ Expected<MR::VoxelsLoad::DicomVolume> loadDicomFolder( const std::filesystem::pa
     return loadSingleDicomFolder( seriesMap->begin()->second, maxNumThreads, subprogress( cb, 0.3f, 1.0f ) );
 }
 
-std::vector<Expected<LoadDCMResult>> loadDCMsFolder( const std::filesystem::path& path,
+std::vector<Expected<DicomVolumeAsVdb>> loadDicomsFolderAsVdb( const std::filesystem::path& path,
                                                      unsigned maxNumThreads, const ProgressCallback& cb )
 {
     auto dicomRes = loadDicomsFolder( path, maxNumThreads, subprogress( cb, 0, 0.5f ) );
-    std::vector<Expected<LoadDCMResult>> res( dicomRes.size() );
+    std::vector<Expected<DicomVolumeAsVdb>> res( dicomRes.size() );
     for ( int i = 0; i < dicomRes.size(); ++i )
     {
         if ( !dicomRes[i].has_value() )
@@ -639,7 +639,7 @@ std::vector<Expected<LoadDCMResult>> loadDCMsFolder( const std::filesystem::path
             res[i] = unexpected( std::move( dicomRes[i].error() ) );
             continue;
         }
-        res[i] = LoadDCMResult();
+        res[i] = DicomVolumeAsVdb();
         res[i]->vdbVolume = simpleVolumeToVdbVolume( std::move( dicomRes[i]->vol ),
             subprogress( cb,
                 0.5f + float( i ) / float( dicomRes.size() ) * 0.5f,
@@ -653,25 +653,25 @@ std::vector<Expected<LoadDCMResult>> loadDCMsFolder( const std::filesystem::path
     return { res };
 }
 
-Expected<MR::VoxelsLoad::LoadDCMResult> loadDCMFolder( const std::filesystem::path& path, unsigned maxNumThreads /*= 4*/, const ProgressCallback& cb /*= {} */ )
+Expected<MR::VoxelsLoad::DicomVolumeAsVdb> loadDicomFolderAsVdb( const std::filesystem::path& path, unsigned maxNumThreads /*= 4*/, const ProgressCallback& cb /*= {} */ )
 {
     auto loadRes = loadDicomFolder( path, maxNumThreads, subprogress( cb, 0.0f, 0.5f ) );
     if ( !loadRes.has_value() )
         return unexpected( loadRes.error() );
-    LoadDCMResult res;
+    DicomVolumeAsVdb res;
     res.vdbVolume = simpleVolumeToVdbVolume( std::move( loadRes->vol ), subprogress( cb, 0.5f, 1.0f ) );
     res.name = std::move( loadRes->name );
     res.xf = std::move( loadRes->xf );
     return res;
 }
 
-std::vector<Expected<LoadDCMResult>> loadDCMFolderTree( const std::filesystem::path& path, unsigned maxNumThreads, const ProgressCallback& cb )
+std::vector<Expected<DicomVolumeAsVdb>> loadDicomsFolderTreeAsVdb( const std::filesystem::path& path, unsigned maxNumThreads, const ProgressCallback& cb )
 {
     MR_TIMER;
-    std::vector<Expected<LoadDCMResult>> res;
+    std::vector<Expected<DicomVolumeAsVdb>> res;
     auto tryLoadDir = [&]( const std::filesystem::path& dir )
     {
-        auto loadRes = loadDCMsFolder( dir, maxNumThreads, cb );
+        auto loadRes = loadDicomsFolderAsVdb( dir, maxNumThreads, cb );
         if ( loadRes.size() == 1 && !loadRes[0].has_value() && loadRes[0].error() == "Loading canceled" )
             return false;
 
@@ -691,7 +691,7 @@ std::vector<Expected<LoadDCMResult>> loadDCMFolderTree( const std::filesystem::p
     return res;
 }
 
-Expected<std::shared_ptr<ObjectVoxels>> createObjectVoxels( const LoadDCMResult & dcm, const ProgressCallback & cb )
+Expected<std::shared_ptr<ObjectVoxels>> createObjectVoxels( const DicomVolumeAsVdb & dcm, const ProgressCallback & cb )
 {
     MR_TIMER
     std::shared_ptr<ObjectVoxels> obj = std::make_shared<ObjectVoxels>();
@@ -720,7 +720,7 @@ Expected<DicomVolume> loadDicomFile( const std::filesystem::path& path, const Pr
     simpleVolume.dims.z = 1;
     auto fileRes = loadSingleFile( path, simpleVolume, 0 );
     if ( !fileRes.success )
-        return unexpected( "loadDCMFile: error load file: " + utf8string( path ) );
+        return unexpected( "loadDicomFileAsVdb: error load file: " + utf8string( path ) );
     simpleVolume.max = fileRes.max;
     simpleVolume.min = fileRes.min;
 
@@ -730,23 +730,36 @@ Expected<DicomVolume> loadDicomFile( const std::filesystem::path& path, const Pr
     return res;
 }
 
+Expected<DicomVolumeAsVdb> loadDicomFileAsVdb( const std::filesystem::path& path, const ProgressCallback& cb )
+{
+    return loadDicomFile( path, subprogress( cb, 0.f, 0.5f ) )
+        .transform( [&]( DicomVolume&& v )
+        {
+            DicomVolumeAsVdb ret;
+            ret.vdbVolume = simpleVolumeToVdbVolume( std::move( v.vol ), subprogress( cb, 0.5f, 1.f ) );
+            ret.name = std::move( v.name );
+            ret.xf = v.xf;
+            return ret;
+        } );
+}
+
 } // namespace VoxelsLoad
 
 namespace VoxelsSave
 {
 
-Expected<void> toDCM( const VdbVolume& vdbVolume, const std::filesystem::path& path, ProgressCallback cb )
+Expected<void> toDicom( const VdbVolume& vdbVolume, const std::filesystem::path& path, ProgressCallback cb )
 {
     MinMaxf sourceScale{ vdbVolume.min, vdbVolume.max };
     auto simpleVolume = vdbVolumeToSimpleVolumeU16( vdbVolume, {}, { sourceScale }, subprogress( cb, 0.f, 0.5f ) );
     if ( simpleVolume )
-        return toDCM( *simpleVolume, path, sourceScale, subprogress( cb, 0.5f, 1.f ) );
+        return toDicom( *simpleVolume, path, sourceScale, subprogress( cb, 0.5f, 1.f ) );
     else
         return unexpected( simpleVolume.error() );
 }
 
 template <typename T>
-Expected<void> toDCM( const VoxelsVolume<std::vector<T>>& volume, const std::filesystem::path& path, const std::optional<MinMaxf>& sourceScale, const ProgressCallback& cb )
+Expected<void> toDicom( const VoxelsVolume<std::vector<T>>& volume, const std::filesystem::path& path, const std::optional<MinMaxf>& sourceScale, const ProgressCallback& cb )
 {
     if ( !reportProgress( cb, 0.0f ) )
         return unexpected( "Loading canceled" );
@@ -802,14 +815,30 @@ Expected<void> toDCM( const VoxelsVolume<std::vector<T>>& volume, const std::fil
     return {};
 }
 
-template Expected<void> toDCM<uint16_t>( const SimpleVolumeU16& volume, const std::filesystem::path& path, const std::optional<MinMaxf>& sourceScale, const ProgressCallback& cb );
+template Expected<void> toDicom<uint16_t>( const SimpleVolumeU16& volume, const std::filesystem::path& path, const std::optional<MinMaxf>& sourceScale, const ProgressCallback& cb );
 
 MR_ON_INIT
 {
     static const IOFilter filter( "Dicom (.dcm)", "*.dcm" );
-    MR::VoxelsSave::setVoxelsSaver( filter, MR::VoxelsSave::toDCM );
+    MR::VoxelsSave::setVoxelsSaver( filter, MR::VoxelsSave::toDicom );
     /* additionally register the general saver as an object saver for this format */
     MR::ObjectSave::setObjectSaver( filter, MR::saveObjectVoxelsToFile );
+
+    MR::VoxelsLoad::setVoxelsLoader(
+        filter,
+        []( const std::filesystem::path& path, const ProgressCallback& cb )
+        {
+            return loadDicomFileAsVdb( path, cb ).transform(
+                []( DicomVolumeAsVdb&& r )
+                {
+                    std::vector<VdbVolume> ret;
+                    ret.push_back( std::move( r.vdbVolume ) ); // Not using `return std::vector{ std::move( r.vdbVolume ) }` because that would always copy `v`.
+                    return ret;
+                }
+            );
+        }
+    );
+    MR::ObjectLoad::setObjectLoader( filter, MR::makeObjectFromVoxelsFile );
 };
 
 } // namespace VoxelsSave

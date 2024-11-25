@@ -9,10 +9,10 @@ namespace MR.DotNet
 {
     public struct MeshRegions
     {
-        public BitSet faces;
+        public FaceBitSet faces;
         public int numRegions = 0;
 
-        public MeshRegions(BitSet faces, int numRegions)
+        public MeshRegions(FaceBitSet faces, int numRegions)
         {
             this.faces = faces;
             this.numRegions = numRegions;
@@ -132,26 +132,26 @@ namespace MR.DotNet
             var mrRegions = mrMeshComponentsGetLargeByAreaRegions(ref mp.mrMeshPart, map.mrMap_.faceMap, numRegions, minArea);
             return new MeshRegions
             {
-                faces = new BitSet(mrRegions.faces),
+                faces = new FaceBitSet(mrRegions.faces),
                 numRegions = mrRegions.numRegions
             };
         }
         /// returns the union of connected components, each having at least given area
-        static public BitSet GetLargeByAreaComponents( MeshPart mp, float minArea )
+        static public FaceBitSet GetLargeByAreaComponents( MeshPart mp, float minArea )
         {
             var components = mrMeshComponentsGetLargeByAreaComponents(ref mp.mrMeshPart, minArea, IntPtr.Zero);
-            return new BitSet(components);
+            return new FaceBitSet(components);
         }
         /// returns the largest by surface area component or empty set if its area is smaller than \param minArea        
-        unsafe static public BitSet GetLargestComponent( MeshPart mp, FaceIncidence incidence, float minArea, out int numSmallerComponents )
+        unsafe static public FaceBitSet GetLargestComponent( MeshPart mp, FaceIncidence incidence, float minArea, out int numSmallerComponents )
         {
             fixed (int* p = &numSmallerComponents) 
-                return new BitSet( mrMeshComponentsGetLargestComponent(ref mp.mrMeshPart, incidence, IntPtr.Zero, minArea, p) );
+                return new FaceBitSet( mrMeshComponentsGetLargestComponent(ref mp.mrMeshPart, incidence, IntPtr.Zero, minArea, p) );
         }
         /// not effective to call more than once, if several components are needed use GetAllComponentsMap
-        static public BitSet GetComponent( MeshPart mp, FaceId id, FaceIncidence incidence )
+        static public FaceBitSet GetComponent( MeshPart mp, FaceId id, FaceIncidence incidence )
         {
-            return new BitSet( mrMeshComponentsGetComponent(ref mp.mrMeshPart, id, incidence, IntPtr.Zero) );
+            return new FaceBitSet( mrMeshComponentsGetComponent(ref mp.mrMeshPart, id, incidence, IntPtr.Zero) );
         }
     }
 }

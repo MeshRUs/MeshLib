@@ -423,7 +423,7 @@ size_t getNumActivePairs( const IPointPairs& pairs )
     return pairs.active.count();
 }
 
-NumSum getSumSqDistToPoint( const IPointPairs& pairs, double* inaccuracy )
+NumSum getSumSqDistToPoint( const IPointPairs& pairs, std::optional<double> inaccuracy )
 {
     NumSum res;
     for ( size_t idx : pairs.active )
@@ -438,7 +438,7 @@ NumSum getSumSqDistToPoint( const IPointPairs& pairs, double* inaccuracy )
     return res;
 }
 
-NumSum getSumSqDistToPlane( const IPointPairs& pairs, double* inaccuracy )
+NumSum getSumSqDistToPlane( const IPointPairs& pairs, std::optional<double> inaccuracy )
 {
     NumSum res;
     for ( size_t idx : pairs.active )

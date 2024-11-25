@@ -209,7 +209,10 @@ public:
     ///   models in the folder by given path and
     ///   fields in given JSON
     /// \param childId is its ordinal number within the parent
-    MRMESH_API Expected<std::vector<std::future<Expected<void>>>> serializeRecursive( const std::filesystem::path& path, Json::Value& root, int childId ) const;
+    // This would be automatically skipped in the bindings anyway because of the `Json::Value` parameter.
+    // But skipping it here prevents the vector-of-futures type from being registered, which is helpful.
+    // TODO: figure out how to automate this (add a flag to the parser to outright reject functions based on their parameter and return types).
+    MRMESH_API MR_BIND_IGNORE Expected<std::vector<std::future<Expected<void>>>> serializeRecursive( const std::filesystem::path& path, Json::Value& root, int childId ) const;
 
     /// loads subtree into this Object
     ///   models from the folder by given path and

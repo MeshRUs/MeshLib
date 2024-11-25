@@ -58,10 +58,10 @@ namespace MR.DotNet.Test
             var parameters = new BooleanParameters();
             parameters.mapper = new BooleanResultMapper();
             var booleanResult = MeshBoolean.Boolean(meshA, meshB, BooleanOperation.Union, parameters );
-            var validPointsA = meshA.ValidPoints as BitSet;
-            var validPointsB = meshB.ValidPoints as BitSet;
-            var validFacesA = meshA.ValidFaces as BitSet;
-            var validFacesB = meshB.ValidFaces as BitSet;
+            var validPointsA = meshA.ValidPoints as VertBitSet;
+            var validPointsB = meshB.ValidPoints as VertBitSet;
+            var validFacesA = meshA.ValidFaces as FaceBitSet;
+            var validFacesB = meshB.ValidFaces as FaceBitSet;
 
             Assert.That(validPointsA is not null);
             Assert.That(validPointsB is not null);

@@ -415,16 +415,31 @@ struct [[nodiscard]] Mesh
     /// deletes multiple given faces, also deletes adjacent edges and vertices if they were not shared by remaining faces ant not in \param keepFaces
     MRMESH_API void deleteFaces( const FaceBitSet & fs, const UndirectedEdgeBitSet * keepEdges = nullptr );
 
-    /// finds closest point on this mesh (or its region) to given point;
-    /// xf is mesh-to-point transformation, if not specified then identity transformation is assumed
+    /// finds the closest mesh point on this mesh (or its region) to given point;
+    /// \param point source location to look the closest to
+    /// \param res found closest point including Euclidean coordinates and FaceId
+    /// \param maxDistSq search only in the ball with sqrt(maxDistSq) radius around given point, smaller value here increases performance
+    /// \param xf is mesh-to-point transformation, if not specified then identity transformation is assumed and works much faster;
+    /// \return false if no mesh point is found in the ball with sqrt(maxDistSq) radius around given point
     [[nodiscard]] MRMESH_API bool projectPoint( const Vector3f& point, PointOnFace& res, float maxDistSq = FLT_MAX, const FaceBitSet* region = nullptr, const AffineXf3f * xf = nullptr ) const;
 
-    /// finds closest point on this mesh (or its region) to given point;
-    /// xf is mesh-to-point transformation, if not specified then identity transformation is assumed
+    /// finds the closest mesh point on this mesh (or its region) to given point;
+    /// \param point source location to look the closest to
+    /// \param res found closest point including Euclidean coordinates, barycentric coordinates, FaceId and squared distance to point
+    /// \param maxDistSq search only in the ball with sqrt(maxDistSq) radius around given point, smaller value here increases performance
+    /// \param xf is mesh-to-point transformation, if not specified then identity transformation is assumed and works much faster;
+    /// \return false if no mesh point is found in the ball with sqrt(maxDistSq) radius around given point
     [[nodiscard]] MRMESH_API bool projectPoint( const Vector3f& point, MeshProjectionResult& res, float maxDistSq = FLT_MAX, const FaceBitSet* region = nullptr, const AffineXf3f * xf = nullptr ) const;
+    [[nodiscard]] bool findClosestPoint( const Vector3f& point, MeshProjectionResult& res, float maxDistSq = FLT_MAX, const FaceBitSet* region = nullptr, const AffineXf3f * xf = nullptr ) const { return projectPoint( point, res, maxDistSq, region, xf ); }
 
-    /// this version returns optional without value instead of false
+    /// finds the closest mesh point on this mesh (or its region) to given point;
+    /// \param point source location to look the closest to
+    /// \param maxDistSq search only in the ball with sqrt(maxDistSq) radius around given point, smaller value here increases performance
+    /// \param xf is mesh-to-point transformation, if not specified then identity transformation is assumed and works much faster;
+    /// \return found closest point including Euclidean coordinates, barycentric coordinates, FaceId and squared distance to point
+    ///         or std::nullopt if no mesh point is found in the ball with sqrt(maxDistSq) radius around given point
     [[nodiscard]] MRMESH_API std::optional<MeshProjectionResult> projectPoint( const Vector3f& point, float maxDistSq = FLT_MAX, const FaceBitSet * region = nullptr, const AffineXf3f * xf = nullptr ) const;
+    [[nodiscard]] std::optional<MeshProjectionResult> findClosestPoint( const Vector3f& point, float maxDistSq = FLT_MAX, const FaceBitSet * region = nullptr, const AffineXf3f * xf = nullptr ) const { return projectPoint( point, maxDistSq, region, xf ); }
 
     /// returns cached aabb-tree for this mesh, creating it if it did not exist in a thread-safe manner
     MRMESH_API const AABBTree & getAABBTree() const;

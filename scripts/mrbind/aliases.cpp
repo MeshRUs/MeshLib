@@ -21,6 +21,7 @@ static const char MRBIND_UNIQUE_VAR = []
     MR_ALIAS( loadLines,                            LinesLoad.fromAnySupportedFormat                    );
     MR_ALIAS( loadMesh,                             MeshLoad.fromAnySupportedFormat                     );
     MR_ALIAS( loadPoints,                           PointsLoad.fromAnySupportedFormat                   );
+    MR_ALIAS( loadVoxels,                           VoxelsLoad.fromAnySupportedFormat                   );
     MR_ALIAS( loadVoxelsGav,                        VoxelsLoad.fromGav                                  );
     MR_ALIAS( loadVoxelsRaw,                        VoxelsLoad.fromRaw                                  );
     MR_ALIAS( localFindSelfIntersections,           SelfIntersections.getFaces                          );
@@ -38,6 +39,7 @@ static const char MRBIND_UNIQUE_VAR = []
     MR_ALIAS( saveMesh,                             MeshSave.toAnySupportedFormat                       );
     MR_ALIAS( savePoints,                           PointsSave.toAnySupportedFormat                     );
     MR_ALIAS( saveSliceToImage,                     VoxelsSave.saveSliceToImage                         );
+    MR_ALIAS( saveVoxels,                           VoxelsSave.toAnySupportedFormat                     );
     MR_ALIAS( saveVoxelsGav,                        VoxelsSave.toGav                                    );
     MR_ALIAS( saveVoxelsRaw,                        VoxelsSave.toRawAutoname                            );
     MR_ALIAS( TextAlignParams,                      TextMeshAlignParams                                 );

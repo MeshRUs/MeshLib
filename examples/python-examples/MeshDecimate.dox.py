@@ -9,6 +9,7 @@ mesh.packOptimally()
 
 # Setup decimate parameters
 settings = mrmeshpy.DecimateSettings()
+
 # Decimation stop thresholds, you may specify one or both
 settings.maxDeletedFaces = 1000 # Number of faces to be deleted
 settings.maxError = 0.05 # Maximum error when decimation stops

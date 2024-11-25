@@ -348,28 +348,28 @@ MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, LoadVoxels, [] ( pybind11::module_& m )
 } )
 
 #ifndef MRVOXELS_NO_DICOM
-MR_ADD_PYTHON_CUSTOM_CLASS( mrmeshpy, LoadDCMResult, MR::VoxelsLoad::LoadDCMResult )
-MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, LoadDCMResult, [] ( pybind11::module_& )
+MR_ADD_PYTHON_CUSTOM_CLASS( mrmeshpy, DicomVolumeAsVdb, MR::VoxelsLoad::DicomVolumeAsVdb )
+MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, DicomVolumeAsVdb, [] ( pybind11::module_& )
 {
-    MR_PYTHON_CUSTOM_CLASS( LoadDCMResult ).
-        def_readwrite( "vdbVolume", &MR::VoxelsLoad::LoadDCMResult::vdbVolume ).
-        def_readwrite( "name", &MR::VoxelsLoad::LoadDCMResult::name ).
-        def_readwrite( "xf", &MR::VoxelsLoad::LoadDCMResult::xf );
+    MR_PYTHON_CUSTOM_CLASS( DicomVolumeAsVdb ).
+        def_readwrite( "vdbVolume", &MR::VoxelsLoad::DicomVolumeAsVdb::vdbVolume ).
+        def_readwrite( "name", &MR::VoxelsLoad::DicomVolumeAsVdb::name ).
+        def_readwrite( "xf", &MR::VoxelsLoad::DicomVolumeAsVdb::xf );
 } )
 
-MR_ADD_PYTHON_VEC( mrmeshpy, LoadDCMResults, MR::VoxelsLoad::LoadDCMResult )
+MR_ADD_PYTHON_VEC( mrmeshpy, LoadDCMResults, MR::VoxelsLoad::DicomVolumeAsVdb )
 
 MR_ADD_PYTHON_CUSTOM_DEF( mrmeshpy, LoadVoxelsDicom, [] ( pybind11::module_& m )
 {
-    m.def( "loadDCMFolder", MR::decorateExpected( &MR::VoxelsLoad::loadDCMFolder ),
+    m.def( "loadDicomFolderAsVdb", MR::decorateExpected( &MR::VoxelsLoad::loadDicomFolderAsVdb ),
         pybind11::arg( "path" ), pybind11::arg( "maxNumThreads" ) = 4, pybind11::arg( "callback" ) = ProgressCallback{},
         "Loads first volumetric data from DICOM file(s)" );
 
-    m.def( "loadDCMsFolder",
+    m.def( "loadDicomsFolderAsVdb",
         [] ( const std::filesystem::path& p, unsigned maxNumThreads, const ProgressCallback& cb)
     {
-        auto res = MR::VoxelsLoad::loadDCMsFolder( p, maxNumThreads, cb );
-        std::vector<MR::VoxelsLoad::LoadDCMResult> resVec;
+        auto res = MR::VoxelsLoad::loadDicomsFolderAsVdb( p, maxNumThreads, cb );
+        std::vector<MR::VoxelsLoad::DicomVolumeAsVdb> resVec;
         std::string accumError;
         for ( auto& r : res )
         {

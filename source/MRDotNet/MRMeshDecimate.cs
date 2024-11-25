@@ -47,7 +47,7 @@ namespace MR.DotNet
         /// Limit on the number of deleted faces
         public int maxDeletedFaces = int.MaxValue;
         /// Region on mesh to be decimated, it is updated during the operation. If null then whole mesh is decimated
-        public BitSet? region = null;
+        public FaceBitSet? region = null;
         /// Whether to allow collapse of edges incident to notFlippable edges,
         /// which can move vertices of notFlippable edges unless they are fixed
         public bool collapseNearNotFlippable = false;
@@ -77,6 +77,37 @@ namespace MR.DotNet
         public int minFacesInPart = 0;
     };
 
+    /// parameters for Remesh
+    public struct RemeshParameters
+    {
+        /// the algorithm will try to keep the length of all edges close to this value,
+        /// splitting the edges longer than targetEdgeLen, and then eliminating the edges shorter than targetEdgeLen
+        public float targetEdgeLen = 0.001f;
+        /// maximum number of edge splits allowed during subdivision
+        public int maxEdgeSplits = 10000000;
+        /// improves local mesh triangulation by doing edge flips if it does not change dihedral angle more than on this value
+        public float maxAngleChangeAfterFlip = 30 * (float)Math.PI / 180.0f;
+        /// maximal shift of a boundary during one edge collapse
+        public float maxBdShift = float.MaxValue;
+        /// this option in subdivision works best for natural surfaces, where all triangles are close to equilateral and have similar area,
+        /// and no sharp edges in between
+        public bool useCurvature = false;
+        /// the number of iterations of final relaxation of mesh vertices;
+        /// few iterations can give almost perfect uniformity of the vertices and edge lengths but deviate from the original surface
+        public int finalRelaxIters = 0;
+        /// if true prevents the surface from shrinkage after many iterations
+        public bool finalRelaxNoShrinkage = false;
+        /// region on mesh to be changed, it is updated during the operation
+        public FaceBitSet? region = null;
+        /// whether to pack mesh at the end
+        public bool packMesh = false;
+        /// if true, then every new vertex after subdivision will be projected on the original mesh (before smoothing);
+        /// this does not affect the vertices moved on other stages of the processing
+        public bool projectOnOriginalMesh = false;
+
+        public RemeshParameters() {}
+    };
+
     public struct DecimateResult
     {
         /// Number deleted verts. Same as the number of performed collapses
@@ -89,43 +120,64 @@ namespace MR.DotNet
         ///    the shortest remaining edge in the mesh
         public float errorIntroduced = 0;
         public DecimateResult() {}
-    };
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct MRDecimateParameters
-    {
-        public DecimateStrategy strategy = DecimateStrategy.MinimizeError;
-        public float maxError = 0.001f;
-        public float maxEdgeLen = float.MaxValue;
-        public float maxBdShift = float.MaxValue;
-        public float maxTriangleAspectRatio = 20.0f;
-        public float criticalTriAspectRatio = float.MaxValue;
-        public float tinyEdgeLength = -1;
-        public float stabilizer = 0.001f;
-        public byte optimizeVertexPos = 1;
-        public int maxDeletedVertices = int.MaxValue;
-        public int maxDeletedFaces = int.MaxValue;
-        public IntPtr region = IntPtr.Zero;
-        public byte collapseNearNotFlippable = 1;
-        public byte touchNearBdEdges = 1;
-        public byte touchBdVerts = 1;
-        public float maxAngleChange = -1;
-        public byte packMesh = 0;
-        public IntPtr progressCallback = IntPtr.Zero;
-        public int subdivideParts = 1;
-        public byte decimateBetweenParts = 1;
-        public int minFacesInPart = 0;
-        public MRDecimateParameters() {}
-    };
+    };    
 
     public class MeshDecimate
     {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct MRDecimateParameters
+        {
+            public DecimateStrategy strategy = DecimateStrategy.MinimizeError;
+            public float maxError = 0.001f;
+            public float maxEdgeLen = float.MaxValue;
+            public float maxBdShift = float.MaxValue;
+            public float maxTriangleAspectRatio = 20.0f;
+            public float criticalTriAspectRatio = float.MaxValue;
+            public float tinyEdgeLength = -1;
+            public float stabilizer = 0.001f;
+            public byte optimizeVertexPos = 1;
+            public int maxDeletedVertices = int.MaxValue;
+            public int maxDeletedFaces = int.MaxValue;
+            public IntPtr region = IntPtr.Zero;
+            public byte collapseNearNotFlippable = 1;
+            public byte touchNearBdEdges = 1;
+            public byte touchBdVerts = 1;
+            public float maxAngleChange = -1;
+            public byte packMesh = 0;
+            public IntPtr progressCallback = IntPtr.Zero;
+            public int subdivideParts = 1;
+            public byte decimateBetweenParts = 1;
+            public int minFacesInPart = 0;
+            public MRDecimateParameters() { }
+        };
 
-        /// Collapse edges in mesh region according to the settings
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct MRRemeshParameters
+        {
+            public float targetEdgeLen = 0.001f;
+            public int maxEdgeSplits = 10000000;public float maxAngleChangeAfterFlip = 30 * (float)Math.PI / 180.0f;
+            public float maxBdShift = float.MaxValue;
+            public byte useCurvature = 0;
+            public int finalRelaxIters = 0;
+            public byte finalRelaxNoShrinkage = 0;
+            public IntPtr region = IntPtr.Zero;
+            public byte packMesh = 0;
+            public byte projectOnOriginalMesh = 0;
+            public IntPtr cb = IntPtr.Zero;
+
+            public MRRemeshParameters() { }
+        };
+
         [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
         private static extern DecimateResult mrDecimateMesh( IntPtr mesh, ref MRDecimateParameters settings );
 
-        public static DecimateResult Decimate( Mesh mesh, DecimateParameters settings )
+        /// Splits too long and eliminates too short edges from the mesh
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrRemesh(IntPtr mesh, ref MRRemeshParameters settings );
+
+        /// Collapse edges in mesh region according to the settings
+        public static DecimateResult Decimate( ref Mesh mesh, DecimateParameters settings )
         {
             MRDecimateParameters mrParameters = new MRDecimateParameters();
             mrParameters.strategy = settings.strategy;
@@ -151,6 +203,24 @@ namespace MR.DotNet
             mrParameters.minFacesInPart = settings.minFacesInPart;
 
             return mrDecimateMesh( mesh.mesh_, ref mrParameters);
+        }
+        /// Splits too long and eliminates too short edges from the mesh
+        public static bool Remesh( ref Mesh mesh, RemeshParameters settings )
+        {
+            MRRemeshParameters mrParameters = new MRRemeshParameters();
+            mrParameters.targetEdgeLen = settings.targetEdgeLen;
+            mrParameters.maxEdgeSplits = settings.maxEdgeSplits;
+            mrParameters.maxAngleChangeAfterFlip = settings.maxAngleChangeAfterFlip;
+            mrParameters.maxBdShift = settings.maxBdShift;
+            mrParameters.useCurvature = settings.useCurvature ? (byte)1 : (byte)0;
+            mrParameters.finalRelaxIters = settings.finalRelaxIters;
+            mrParameters.finalRelaxNoShrinkage = settings.finalRelaxNoShrinkage ? (byte)1 : (byte)0;
+            mrParameters.region = settings.region is null ? (IntPtr)null : settings.region.bs_;
+            mrParameters.packMesh = settings.packMesh ? (byte)1 : (byte)0;
+            mrParameters.projectOnOriginalMesh = settings.projectOnOriginalMesh ? (byte)1 : (byte)0;
+            mrParameters.cb = IntPtr.Zero;
+
+            return mrRemesh( mesh.mesh_, ref mrParameters );
         }
 
     }

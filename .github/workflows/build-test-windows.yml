@@ -147,7 +147,7 @@ jobs:
         if: ${{inputs.mrbind}}
         with:
           msystem: clang64
-          install: make gawk
+          install: make gawk procps-ng
           location: C:\msys64_meshlib_mrbind
 
       - name: Install Clang in MSYS2
@@ -232,10 +232,22 @@ jobs:
         if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.runner == 'windows-2019' }}
         run: tar -a -c -f MREDist_${{ matrix.config }}.zip ./source/x64/${{matrix.config}}
 
+      - name: Archive .NET files # https://github.com/actions/download-artifact#maintaining-file-permissions-and-case-sensitive-files
+        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.runner == 'windows-2022' && matrix.config == 'Release' }}
+        run: tar -a -c -f MREDist_DotNet.zip ./source/x64/Release
+
       - name: Upload Windows Binaries Archive
         if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.runner == 'windows-2019' }}
         uses: actions/upload-artifact@v4
         with:
           name: WindowsArchive_${{matrix.config}}
           path: MREDist_${{matrix.config}}.zip
+          retention-days: 1
+
+      - name: Upload .NET Binaries Archive
+        if: ${{ inputs.UPLOAD_ARTIFACTS && matrix.runner == 'windows-2022' && matrix.config == 'Release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DotNetArchive
+          path: MREDist_DotNet.zip
           retention-days: 1

@@ -80,7 +80,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\install\app\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories></AdditionalLibraryDirectories>
       <AdditionalDependencies>$(SolutionDir)..\install\lib\$(Configuration)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
@@ -111,7 +111,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\install\app\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories></AdditionalLibraryDirectories>
       <AdditionalDependencies>$(SolutionDir)..\install\lib\$(Configuration)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreLinkEvent>

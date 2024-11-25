@@ -257,7 +257,7 @@ namespace MR.DotNet.Test
             var cubeMesh = Mesh.MakeCube(Vector3f.Diagonal(1), Vector3f.Diagonal(-0.5f));
             Assert.That(cubeMesh.Volume(), Is.EqualTo(1.0).Within(1e-6));
 
-            var validPoints = new BitSet(8);
+            var validPoints = new FaceBitSet(8);
             validPoints.Set(0);
             validPoints.Set(1);
             validPoints.Set(3);
@@ -341,7 +341,7 @@ namespace MR.DotNet.Test
             var cubeMesh = Mesh.MakeCube(Vector3f.Diagonal(1), Vector3f.Diagonal(-0.5f));
             Assert.That(cubeMesh.Area(), Is.EqualTo(6.0).Within(0.001));
 
-            var faces = new BitSet(12, true);
+            var faces = new FaceBitSet(12, true);
             for (int i = 0; i < 6; ++i)
                 faces.Set(i, false);
 
@@ -350,6 +350,34 @@ namespace MR.DotNet.Test
             cubeMesh.DeleteFaces(faces);
             Assert.That(cubeMesh.Area(), Is.EqualTo(3.0).Within(0.001));
         }
-    }
+
+        [Test]
+        public void TestIncidentFacesFromVerts()
+        {
+            var cubeMesh = Mesh.MakeCube(Vector3f.Diagonal(1), Vector3f.Diagonal(-0.5f));
+            var verts = new VertBitSet(8, false);
+            verts.Set(0, true);
+            var faces = RegionBoundary.GetIncidentFaces(cubeMesh, verts);
+            Assert.That(faces.Count, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void TestIncidentFacesFromEdges()
+        {
+            var cubeMesh = Mesh.MakeCube(Vector3f.Diagonal(1), Vector3f.Diagonal(-0.5f));
+            var edges = new UndirectedEdgeBitSet(12, false);
+            edges.Set(0, true);
+            var faces = RegionBoundary.GetIncidentFaces(cubeMesh, edges);
+            Assert.That(faces.Count, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void TestShortEdges()
+        {
+            var mesh = Mesh.MakeTorus(1.0f, 0.05f, 16, 16);
+            var shortEdges = MeshFixer.FindShortEdges(new MeshPart( mesh ), 0.1f);
+            Assert.That(shortEdges.Count(), Is.EqualTo(256));
+        }
+    }    
 }
 

@@ -1,9 +1,11 @@
 #include "MRIntersectionContour.h"
-#include "MRMeshTopology.h"
+#include "MRMesh.h"
 #include "MRContoursCut.h"
 #include "MRTimer.h"
 #include "MRRegionBoundary.h"
 #include "MRFillContour.h"
+#include "MRAffineXf3.h"
+#include "MRParallelFor.h"
 #include <parallel_hashmap/phmap.h>
 
 namespace
@@ -193,6 +195,63 @@ ContinuousContours orderIntersectionContours( const MeshTopology& topologyA, con
     while ( !accumulativeSet.empty() )
     {
         res.push_back( orderFirstIntersectionContour( accumulativeSet ) );
+    }
+    return res;
+}
+
+Contours3f extractIntersectionContours( const Mesh& meshA, const Mesh& meshB, const ContinuousContours& orientedContours, 
+    const CoordinateConverters& converters, const AffineXf3f* rigidB2A /*= nullptr */ )
+{
+    std::function<Vector3f( const Vector3f& coord, bool meshA )> getCoord;
+
+    if ( !rigidB2A )
+    {
+        getCoord = [] ( const Vector3f& coord, bool )
+        {
+            return coord;
+        };
+    }
+    else
+    {
+        getCoord = [xf = *rigidB2A] ( const Vector3f& coord, bool meshA )
+        {
+            return meshA ? coord : xf( coord );
+        };
+    }
+    AffineXf3f inverseXf;
+    if ( rigidB2A )
+        inverseXf = rigidB2A->inverse();
+
+    Contours3f res( orientedContours.size() );
+    for ( int i = 0; i < res.size(); ++i )
+    {
+        const auto& inCont = orientedContours[i];
+        auto& resI = res[i];
+        resI.resize( inCont.size() );
+        ParallelFor( inCont, [&] ( size_t j )
+        {
+            Vector3f a, b, c, d, e;
+            const auto& vet = inCont[j];
+            if ( vet.isEdgeATriB )
+            {
+                meshB.getTriPoints( vet.tri, a, b, c );
+                d = meshA.orgPnt( vet.edge );
+                e = meshA.destPnt( vet.edge );
+            }
+            else
+            {
+                meshA.getTriPoints( vet.tri, a, b, c );
+                d = meshB.orgPnt( vet.edge );
+                e = meshB.destPnt( vet.edge );
+            }
+            // always calculate in mesh A space
+            resI[j] = findTriangleSegmentIntersectionPrecise(
+                getCoord( a, !vet.isEdgeATriB ),
+                getCoord( b, !vet.isEdgeATriB ),
+                getCoord( c, !vet.isEdgeATriB ),
+                getCoord( d, vet.isEdgeATriB ),
+                getCoord( e, vet.isEdgeATriB ), converters );
+        } );
     }
     return res;
 }

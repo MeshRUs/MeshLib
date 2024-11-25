@@ -161,7 +161,7 @@ namespace MR.DotNet
         /// optionally subdivides new patch on smaller triangles,
         /// optionally make smooth connection with existing triangles outside the hole
         /// \return triangles of the patch
-        unsafe public static BitSet FillHoleNicely(ref Mesh mesh, EdgeId holeEdge, FillHoleNicelyParams parameters)
+        unsafe public static FaceBitSet FillHoleNicely(ref Mesh mesh, EdgeId holeEdge, FillHoleNicelyParams parameters)
         {
             MRFillHoleNicelyParams mrParam;
             mrParam.triangulationParams.metric = parameters.triangulationParams.Metric.mrMetric_;
@@ -181,7 +181,7 @@ namespace MR.DotNet
             mrParam.naturalSmooth = parameters.NaturalSmooth ? (byte)1 : (byte)0;
             mrParam.edgeWeights = parameters.EdgeWeights;
 
-            var res = new BitSet( mrFillHoleNicely(mesh.varMesh(), holeEdge, ref mrParam) );
+            var res = new FaceBitSet( mrFillHoleNicely(mesh.varMesh(), holeEdge, ref mrParam) );
 
             if (parameters.triangulationParams.StopBeforeBadTriangulation.HasValue)
             {

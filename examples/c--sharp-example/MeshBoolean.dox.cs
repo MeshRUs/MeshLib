@@ -6,29 +6,20 @@ class Program
 {
     static void Main(string[] args)
     {
-        if (args.Length != 4)
-            Console.WriteLine( "Usage: {0}  {{unite | intersect}}  INPUT1 INPUT2 OUTPUT", Assembly.GetExecutingAssembly().GetName().Name );
-
-        BooleanOperation op;
-        switch (args[0])
-        {
-            case "unite":
-                op = BooleanOperation.Union;
-                break;
-            case "intersect":
-                op = BooleanOperation.Intersection;
-                break;
-            default:
-                Console.WriteLine( "Unknown operation: {0}", args[0] );
-                return;
-        }
+        if (args.Length != 2)
+            Console.WriteLine( "Usage: {0} INPUT1 INPUT2", Assembly.GetExecutingAssembly().GetName().Name );
 
         try
         {
+            // load mesh
             Mesh meshA = Mesh.FromAnySupportedFormat(args[1]);
             Mesh meshB = Mesh.FromAnySupportedFormat(args[2]);
-            var res = MeshBoolean.Boolean(meshA, meshB, op);
-            Mesh.ToAnySupportedFormat(res.mesh, args[3]);
+
+            // perform boolean operation
+            var res = MeshBoolean.Boolean(meshA, meshB, BooleanOperation.Intersection);
+
+            // save result to STL file
+            Mesh.ToAnySupportedFormat(res.mesh, "out_boolean.stl");
         }
         catch (Exception e)
         {

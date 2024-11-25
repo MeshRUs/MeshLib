@@ -100,6 +100,9 @@ namespace MR.DotNet
         private static extern IntPtr mrBitSetSub(IntPtr a, IntPtr b);
 
         [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetOr(IntPtr a, IntPtr b);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
         private static extern void mrBitSetFree(IntPtr bs);
 
         /// creates empty bitset
@@ -190,6 +193,152 @@ namespace MR.DotNet
             return new BitSet(mrBitSetSub(a.bs_, b.bs_));
         }
 
+        /// creates a new bitset including both a's bits and  b's bits
+        public static BitSet operator |(BitSet a, BitSet b)
+        {
+            return new BitSet(mrBitSetOr(a.bs_, b.bs_));
+        }
+
         bool needDispose = false;
+    }
+    /// container of bits representing vert indices
+    public class VertBitSet : BitSet 
+    {
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetCopy(IntPtr bs);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetSub(IntPtr a, IntPtr b);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetOr(IntPtr a, IntPtr b);
+
+        internal VertBitSet(IntPtr bs) : base(bs) { }
+        public VertBitSet( int size ) : base( size ) { }
+        public VertBitSet( int size, bool fillValue ) : base( size, fillValue ) { }
+
+        /// returns a deep copy of the bitset
+        public override BitSetReadOnly Clone()
+        {
+            IntPtr bsCopy = mrBitSetCopy(bs_);
+            return new VertBitSet(bsCopy);
+        }
+        /// creates a new bitset including a's bits and excluding b's bits 
+        public static VertBitSet operator -(VertBitSet a, VertBitSet b)
+        {
+            return new VertBitSet(mrBitSetSub(a.bs_, b.bs_));
+        }
+
+        /// creates a new bitset including both a's bits and  b's bits
+        public static VertBitSet operator |(VertBitSet a, VertBitSet b)
+        {
+            return new VertBitSet(mrBitSetOr(a.bs_, b.bs_));
+        }
+    }
+    /// container of bits representing face indices
+    public class FaceBitSet : BitSet
+    {
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetCopy(IntPtr bs);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetSub(IntPtr a, IntPtr b);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetOr(IntPtr a, IntPtr b);
+
+        internal FaceBitSet(IntPtr bs) : base(bs) { }
+        /// creates bitset with given size
+        public FaceBitSet( int size ) : base( size ) { }
+        /// creates bitset with given size and fill value
+        public FaceBitSet( int size, bool fillValue ) : base( size, fillValue ) { }
+        /// returns a deep copy of the bitset
+        public override BitSetReadOnly Clone()
+        {
+            IntPtr bsCopy = mrBitSetCopy(bs_);
+            return new FaceBitSet(bsCopy);
+        }
+        /// creates a new bitset including a's bits and excluding b's bits 
+        public static FaceBitSet operator -(FaceBitSet a, FaceBitSet b)
+        {
+            return new FaceBitSet(mrBitSetSub(a.bs_, b.bs_));
+        }
+
+        /// creates a new bitset including both a's bits and  b's bits
+        public static FaceBitSet operator |(FaceBitSet a, FaceBitSet b)
+        {
+            return new FaceBitSet(mrBitSetOr(a.bs_, b.bs_));
+        }
+    }
+    /// container of bits representing edge indices
+    public class EdgeBitSet : BitSet
+    {
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetCopy(IntPtr bs);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetSub(IntPtr a, IntPtr b);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetOr(IntPtr a, IntPtr b);
+
+        internal EdgeBitSet(IntPtr bs) : base(bs) { }
+        /// creates bitset with given size
+        public EdgeBitSet( int size ) : base( size ) { }
+        /// creates bitset with given size and fill value
+        public EdgeBitSet( int size, bool fillValue ) : base( size, fillValue ) { }
+        /// returns a deep copy of the bitset
+        public override BitSetReadOnly Clone()
+        {
+            IntPtr bsCopy = mrBitSetCopy(bs_);
+            return new EdgeBitSet(bsCopy);
+        }
+        /// creates a new bitset including a's bits and excluding b's bits 
+        public static EdgeBitSet operator -(EdgeBitSet a, EdgeBitSet b)
+        {
+            return new EdgeBitSet(mrBitSetSub(a.bs_, b.bs_));
+        }
+
+        /// creates a new bitset including both a's bits and  b's bits
+        public static EdgeBitSet operator |(EdgeBitSet a, EdgeBitSet b)
+        {
+            return new EdgeBitSet(mrBitSetOr(a.bs_, b.bs_));
+        }
+
+    }
+    /// container of bits representing undirected edge indices
+    public class UndirectedEdgeBitSet : BitSet
+    {
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetCopy(IntPtr bs);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetSub(IntPtr a, IntPtr b);
+
+        [DllImport("MRMeshC.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr mrBitSetOr(IntPtr a, IntPtr b);
+
+        internal UndirectedEdgeBitSet(IntPtr bs) : base(bs) { }
+        /// creates bitset with given size
+        public UndirectedEdgeBitSet( int size ) : base( size ) { }
+        /// creates bitset with given size and fill value
+        public UndirectedEdgeBitSet( int size, bool fillValue ) : base( size, fillValue ) { }
+        /// returns a deep copy of the bitset
+        public override BitSetReadOnly Clone()
+        {
+            IntPtr bsCopy = mrBitSetCopy(bs_);
+            return new UndirectedEdgeBitSet(bsCopy);
+        }
+        /// creates a new bitset including a's bits and excluding b's bits 
+        public static UndirectedEdgeBitSet operator -(UndirectedEdgeBitSet a, UndirectedEdgeBitSet b)
+        {
+            return new UndirectedEdgeBitSet(mrBitSetSub(a.bs_, b.bs_));
+        }
+
+        /// creates a new bitset including both a's bits and  b's bits
+        public static UndirectedEdgeBitSet operator |(UndirectedEdgeBitSet a, UndirectedEdgeBitSet b)
+        {
+            return new UndirectedEdgeBitSet(mrBitSetOr(a.bs_, b.bs_));
+        }
     }
 }

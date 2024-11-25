@@ -54,6 +54,17 @@ Vector3<R> calcOrientedArea( const Contour3<T> & contour )
     return R(0.5) * area;
 }
 
+/// returns sum length of the given contour
+/// \tparam R is the type for the accumulation and for result
+template<typename V, typename R = typename V::ValueType>
+R calcLength( const Contour<V>& contour )
+{
+    R l = R( 0 );
+    for ( int i = 1; i < contour.size(); ++i )
+        l += R( ( contour[i] - contour[i - 1] ).length() );
+    return l;
+}
+
 /// copy double-contour to float-contour, or vice versa
 template<typename To, typename From>
 To copyContour( const From & from )
@@ -81,6 +92,10 @@ To copyContours( const From & from )
 // Instantiate the templates when generating bindings.
 MR_BIND_TEMPLATE( float calcOrientedArea( const Contour2<float> & contour ) )
 MR_BIND_TEMPLATE( double calcOrientedArea( const Contour2<double> & contour ) )
+MR_BIND_TEMPLATE( float calcLength( const Contour2<float>& contour ) )
+MR_BIND_TEMPLATE( double calcLength( const Contour2<double>& contour ) )
+MR_BIND_TEMPLATE( float calcLength( const Contour3<float>& contour ) )
+MR_BIND_TEMPLATE( double calcLength( const Contour3<double>& contour ) )
 MR_BIND_TEMPLATE( Vector3<float> calcOrientedArea( const Contour3<float> & contour ) )
 MR_BIND_TEMPLATE( Vector3<double> calcOrientedArea( const Contour3<double> & contour ) )
 MR_BIND_TEMPLATE( Contour2<float> copyContour( const Contour2<double> & from ) )

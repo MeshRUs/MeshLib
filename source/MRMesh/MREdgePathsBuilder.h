@@ -35,42 +35,52 @@ class EdgePathsBuilderT
 {
 public:
     EdgePathsBuilderT( const MeshTopology & topology, const EdgeMetric & metric );
-    // compares proposed metric with best value known for startVert;
-    // if proposed metric is smaller then adds it in the queue and returns true
+
+    /// compares proposed metric with best value known for startVert;
+    /// if proposed metric is smaller then adds it in the queue and returns true
     bool addStart( VertId startVert, float startMetric );
 
-    // information about just reached vertex (with final metric value)
+    /// information about just reached vertex (with final metric value)
     struct ReachedVert
     {
         VertId v;
-        // edge from this vertex to its predecessor in the forest (if this vertex is not start)
+
+        /// edge from this vertex to its predecessor in the forest (if this vertex is not start)
         EdgeId backward;
-        // the penalty to reach this vertex
+
+        /// not reached vertices are ordered in priority queue by their penalty (with the smallest value on top);
+        /// penalty is equal to metric in ordinary Dijkstra, or equal to (metric + target distance lower bound) in A*
         float penalty = FLT_MAX;
-        // summed metric to reach this vertex
+
+        /// summed metric to reach this vertex
         float metric = FLT_MAX;
     };
 
-    // include one more vertex in the final forest, returning vertex-info for the newly reached vertex;
-    // returns invalid VertId in v-field if no more vertices left
+    /// include one more vertex in the final forest, returning vertex-info for the newly reached vertex;
+    /// returns invalid VertId in v-field if no more vertices left
     ReachedVert reachNext();
-    // adds steps for all origin ring edges of the reached vertex;
-    // returns true if at least one step was added
+
+    /// adds steps for all origin ring edges of the reached vertex;
+    /// returns true if at least one step was added
     bool addOrgRingSteps( const ReachedVert & rv );
-    // the same as reachNext() + addOrgRingSteps()
+
+    /// the same as reachNext() + addOrgRingSteps()
     ReachedVert growOneEdge();
 
 public:
-    // returns true if further edge forest growth is impossible
+    /// returns true if further edge forest growth is impossible
     bool done() const { return nextSteps_.empty(); }
-    // returns path length till the next candidate vertex or maximum float value if all vertices have been reached
+
+    /// returns path length till the next candidate vertex or maximum float value if all vertices have been reached
     float doneDistance() const { return nextSteps_.empty() ? FLT_MAX : nextSteps_.top().penalty; }
-    // gives read access to the map from vertex to path to it
+
+    /// gives read access to the map from vertex to path to it
     const VertPathInfoMap & vertPathInfoMap() const { return vertPathInfoMap_; }
-    // returns one element from the map (or nullptr if the element is missing)
+
+    /// returns one element from the map (or nullptr if the element is missing)
     const VertPathInfo * getVertInfo( VertId v ) const;
 
-    // returns the path in the forest from given vertex to one of start vertices
+    /// returns the path in the forest from given vertex to one of start vertices
     EdgePath getPathBack( VertId backpathStart ) const;
 
 protected:
@@ -84,10 +94,10 @@ private:
     struct CandidateVert
     {
         VertId v;
-        // best penalty to reach this vertex
+        /// best penalty to reach this vertex
         float penalty = FLT_MAX;
 
-        // smaller penalty to be the first
+        /// smaller penalty to be the first
         friend bool operator <( const CandidateVert & a, const CandidateVert & b )
         {
             return a.penalty > b.penalty;
@@ -95,9 +105,9 @@ private:
     };
     std::priority_queue<CandidateVert> nextSteps_;
 
-    // compares proposed step with the value known for org( c.back );
-    // if proposed step is smaller then adds it in the queue and returns true;
-    // otherwise if the known metric to org( c.back ) is already not greater than returns false
+    /// compares proposed step with the value known for org( c.back );
+    /// if proposed step is smaller then adds it in the queue and returns true;
+    /// otherwise if the known metric to org( c.back ) is already not greater than returns false
     bool addNextStep_( const VertPathInfo & c );
 };
 

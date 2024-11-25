@@ -46,6 +46,7 @@ jobs:
               - 'scripts/build_thirdparty.sh'
               - 'scripts/install_apt_requirements.sh'
               - 'scripts/install_dnf_requirements.sh'
+              - 'scripts/mrbind/install_deps_ubuntu.sh'
               - 'thirdparty/!(install.bat|vcpkg/**)'
 
       - name: Filter Windows paths
