@@ -2,7 +2,7 @@ import math
 
 import meshlib.mrmeshpy as mrmeshpy
 
-mesh = mrmeshpy.loadMesh("mesh.stl")
+mesh = mrmeshpy.makeTorus()
 
 relax_params = mrmeshpy.MeshRelaxParams()
 relax_params.iterations = 5

@@ -8,6 +8,9 @@ Example of resolving degenerated faces
 - <b class="tab-title">C</b>
 \include MeshResolveDegenerations.dox.c
 
+- <b class="tab-title">Python</b>
+\include MeshResolveDegenerations.dox.py
+
 </div>
 
  */
