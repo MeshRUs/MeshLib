@@ -1781,7 +1781,7 @@ void transparentTextWrapped( const char* fmt, ... )
 
 void setTooltipIfHovered( const std::string& text, float scaling )
 {
-    if ( !ImGui::IsItemHovered() || ImGui::IsItemActive() )
+    if ( !ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) || ImGui::IsItemActive() )
         return;
     assert( scaling > 0.f );
 
