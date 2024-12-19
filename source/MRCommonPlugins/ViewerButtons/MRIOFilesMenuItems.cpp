@@ -3,6 +3,8 @@
 #include "MRViewer/MRMouseController.h"
 #include "MRViewer/MRRecentFilesStore.h"
 #include "MRViewer/MRViewport.h"
+#include "MRViewer/MRUnitSettings.h"
+#include "MRViewer/MRUnits.h"
 #include "MRViewer/MROpenObjects.h"
 #include "MRMesh/MRDirectory.h"
 #include "MRMesh/MRIOFormatsRegistry.h"
@@ -333,11 +335,16 @@ void sOpenDICOMs( const std::filesystem::path & directory, const std::string & s
             std::vector<std::shared_ptr<ObjectVoxels>> voxelObjects;
             ProgressBar::setTaskCount( (int)loadRes.size() + 1 );
             std::string errors;
+            // conversion factor from meters into current UI length units
+            float scaleFactor = 1;
+            if ( auto uiLengthUnit = UnitSettings::getUiLengthUnit() )
+                scaleFactor = getUnitInfo( LengthUnit::meters ).conversionFactor / getUnitInfo( *uiLengthUnit ).conversionFactor;
             for ( auto & res : loadRes )
             {
                 if ( res.has_value() )
                 {
                     ProgressBar::nextTask( "Construct ObjectVoxels" );
+                    res->vol.voxelSize *= scaleFactor;
                     auto expObj = createObjectVoxels( *res, ProgressBar::callBackSetProgress );
                     if ( ProgressBar::isCanceled() )
                     {
@@ -416,10 +423,10 @@ void OpenDirectoryMenuItem::openDirectory( const std::filesystem::path& director
 #if !defined( MESHLIB_NO_VOXELS ) && !defined( MRVOXELS_NO_DICOM )
     // check if the directory can be opened as a DICOM archive
     if ( VoxelsLoad::isDicomFolder( directory ) )
-    {
-        sOpenDICOMs( directory, "Failed to open directory as DICOM:\n" + utf8string( directory ) );
-        return;
-    }
+            {
+                sOpenDICOMs( directory, "Failed to open directory as DICOM:\n" + utf8string( directory ) );
+                return;
+            }
 #endif
 
     bool isAnySupportedFiles = isSupportedFileInSubfolders( directory );

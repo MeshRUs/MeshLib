@@ -1,4 +1,5 @@
 #include "MROpenObjects.h"
+#include "MRUnitSettings.h"
 #include <MRMesh/MRObject.h>
 #include <MRMesh/MRTimer.h>
 #include <MRMesh/MRStringConvert.h>
@@ -126,7 +127,11 @@ Expected<LoadedObject> makeObjectTreeFromFolder( const std::filesystem::path & f
         {
             loadTasks.emplace_back( std::async( std::launch::async, [folder = node.path, &loadingCanceled] ()
             {
-                return VoxelsLoad::makeObjectVoxelsFromDicomFolder( folder, [&loadingCanceled]( float ){ return !loadingCanceled; } ).and_then(
+                float scaleFactor = 1;
+                if ( auto uiLengthUnit = UnitSettings::getUiLengthUnit() )
+                    scaleFactor = getUnitInfo( LengthUnit::meters ).conversionFactor / getUnitInfo( *uiLengthUnit ).conversionFactor;
+                return VoxelsLoad::makeObjectVoxelsFromDicomFolder( folder, scaleFactor,
+                    [&loadingCanceled]( float ){ return !loadingCanceled; } ).and_then(
                 [&]( LoadedObjectVoxels && ld ) -> loadObjResultType
                 {
                     return LoadedObjects{ .objs = { ld.obj } };
