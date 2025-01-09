@@ -21,6 +21,7 @@ jobs:
     uses: ./.github/workflows/config.yml
 
   debug-config:
+    if: false
     needs: config
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +32,7 @@ jobs:
           EOF
 
   prepare-image:
+    if: false
     needs: config
     uses: ./.github/workflows/prepare-images.yml
     with:
@@ -41,6 +43,7 @@ jobs:
     secrets: inherit
 
   versioning-and-release-url:
+    if: false
     needs: config
     uses: ./.github/workflows/versioning-release.yml
     with:
@@ -51,6 +54,7 @@ jobs:
       BUILD_MACHINE_TOKEN: ${{ secrets.BUILD_MACHINE_TOKEN }}
 
   windows-build-test:
+    if: false
     needs: [ config, prepare-image ]
     uses: ./.github/workflows/build-test-windows.yml
     with:
@@ -62,6 +66,7 @@ jobs:
     secrets: inherit
 
   ubuntu-arm64-build-test:
+    if: false
     needs: [ config, prepare-image ]
     uses: ./.github/workflows/build-test-ubuntu-arm64.yml
     with:
@@ -74,6 +79,7 @@ jobs:
     secrets: inherit
 
   ubuntu-x64-build-test:
+    if: false
     needs: [ config, prepare-image ]
     uses: ./.github/workflows/build-test-ubuntu-x64.yml
     with:
@@ -87,6 +93,7 @@ jobs:
     secrets: inherit
 
   fedora-build-test:
+    if: false
     needs: [ config, prepare-image ]
     uses: ./.github/workflows/build-test-fedora.yml
     with:
@@ -99,12 +106,14 @@ jobs:
     secrets: inherit
 
   emscripten-build-test:
+    if: false
     needs: [ config, prepare-image ]
     uses: ./.github/workflows/build-test-emscripten.yml
     with:
       docker_image_tag: ${{ needs.config.outputs.docker_image_tag }}
 
   macos-build-test:
+    if: false
     needs: [ config ]
     uses: ./.github/workflows/build-test-macos.yml
     with:
@@ -116,7 +125,7 @@ jobs:
     secrets: inherit
 
   update-win-version:
-    if: ${{ needs.config.outputs.upload_artifacts == 'true' }}
+    if: ${{ needs.config.outputs.upload_artifacts == 'true' && false }}
     needs:
       - config
       - windows-build-test
@@ -194,7 +203,7 @@ jobs:
           retention-days: 1
 
   create-nuget-package:
-    if: ${{ needs.config.outputs.upload_artifacts == 'true' }}
+    if: ${{ needs.config.outputs.upload_artifacts == 'true' && false }}
     needs:
       - config
       - windows-build-test
@@ -233,7 +242,7 @@ jobs:
          retention-days: 1
 
   upload-distributions:
-    if: ${{ !cancelled() && needs.config.outputs.upload_artifacts == 'true' }}
+    if: ${{ !cancelled() && needs.config.outputs.upload_artifacts == 'true' && false }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     needs:
@@ -279,14 +288,14 @@ jobs:
           fi
 
   test-distribution:
-    if: ${{ needs.config.outputs.upload_artifacts == 'true' }}
+    if: ${{ needs.config.outputs.upload_artifacts == 'true' && false }}
     needs: [ config, versioning-and-release-url, upload-distributions ]
     uses: ./.github/workflows/test-distribution.yml
     with:
       release_id: ${{ needs.versioning-and-release-url.outputs.release_id }}
 
   update-dev-documentation:
-    if: ${{ needs.config.outputs.upload_artifacts == 'true' || needs.config.outputs.update_doc == 'true' }}
+    if: ${{ false && ( needs.config.outputs.upload_artifacts == 'true' || needs.config.outputs.update_doc == 'true' ) }}
     needs: [ config, ubuntu-arm64-build-test ]
     uses: ./.github/workflows/update-docs.yml
     with:
@@ -295,14 +304,14 @@ jobs:
 
   test-pip-build:
     needs: config
-    if: ${{ needs.config.outputs.test_pip_build == 'true' }}
+    if: ${{ false && needs.config.outputs.test_pip_build == 'true' }}
     uses: ./.github/workflows/pip-build.yml
 
   collect-stats:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     needs: [ upload-distributions ]
-    if: always()
+    if: ${{ false && always() }}
     continue-on-error: true
     steps:
       - name: Checkout
@@ -326,7 +335,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-20.04
     needs: [ collect-stats ]
-    if: always()
+    if: ${{ false && always() }}
     continue-on-error: true
     steps:
         # all Windows

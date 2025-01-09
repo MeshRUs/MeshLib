@@ -1,0 +1,143 @@
+name: Manual Update MeshLib Documentation Site
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      output_folder:
+        required: false
+        type: string
+        default: "MeshLib/dev"
+  # for test
+  pull_request:
+    branches: [ master ]
+    inputs:
+      output_folder:
+        required: false
+        type: string
+        default: "MeshLib/dev"
+  
+jobs:
+  # NOTE: all output values are strings
+  # use the ${{ needs.config.outputs.bool-param == 'true' }} construction to check boolean values
+  config:
+    uses: ./.github/workflows/config.yml
+    
+  prepare-image:
+    if: false
+    needs: config
+    uses: ./.github/workflows/prepare-images.yml
+    with:
+      docker_image_tag:           ${{ needs.config.outputs.docker_image_tag }}
+      need_linux_image_rebuild:   ${{ needs.config.outputs.need_linux_image_rebuild == 'true' }}
+      need_windows_vcpkg_rebuild: ${{ needs.config.outputs.need_windows_vcpkg_rebuild == 'true' }}
+      vcpkg_version:              ${{ needs.config.outputs.vcpkg_version }}
+    secrets: inherit
+
+  create-stubs:
+    timeout-minutes: 40
+    runs-on: [self-hosted, linux-arm64]
+    container:
+      image: ${{ matrix.docker-image }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu22 ]
+        config: [ Release ]
+        compiler: [ clang ]
+        include:
+          - os: ubuntu22
+            docker-image: meshlib/meshlib-ubuntu22-arm64:${{ inputs.docker_image_tag }}
+            cxx-compiler: /usr/bin/clang++-14
+            c-compiler: /usr/bin/clang-14
+            cxx-standard: 20
+    #permissions:
+    #  id-token: write # This is required for requesting the JWT
+    #  contents: read  # This is required for actions/checkout
+
+    steps:
+      - name: Work-around possible permission issues
+        shell: bash
+        run: |
+          # NOTE: {GITHUB_WORKSPACE} != {{ github.workspace }}
+          # Related issue: https://github.com/actions/runner/issues/2058
+          if test -d $GITHUB_WORKSPACE && test -n "$(find ${GITHUB_WORKSPACE} -user root)" ; then
+            mv ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}_${RANDOM}
+            mkdir ${GITHUB_WORKSPACE}
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Is it necessary?
+      #- name: Collect runner's system stats
+      #  continue-on-error: true
+      #  uses: ./.github/actions/collect-runner-stats
+      #  with:
+      #    target_os: ${{ matrix.os }}
+      #    target_arch: arm64
+      #    cxx_compiler: ${{ matrix.cxx-compiler }}
+      #    build_config: ${{ matrix.config }}
+
+      - name: Checkout third-party submodules
+        run: |
+          # have to checkout selective submodules by our own
+          # related issue: https://github.com/actions/checkout/issues/1779
+          export HOME=${RUNNER_TEMP}
+          git config --global --add safe.directory '*'
+          git submodule update --init --depth 1 thirdparty/imgui thirdparty/parallel-hashmap
+
+      - name: Install thirdparty libs
+        run: |
+          ln -s /usr/local/lib/meshlib-thirdparty-lib/lib ./lib
+          ln -s /usr/local/lib/meshlib-thirdparty-lib/include ./include
+
+      - name: Install mrbind
+        if: ${{ inputs.mrbind }}
+        run: scripts/mrbind/install_mrbind_ubuntu.sh
+
+      - name: Create virtualenv
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          echo $PATH >> $GITHUB_PATH
+
+      - name: Setup python requirements
+        run: python3 -m pip install -r ./requirements/python.txt
+
+      - name: Build
+        run: ./scripts/build_source.sh
+        env:
+          MESHLIB_BUILD_RELEASE: ${{ fromJSON('["OFF", "ON"]')[matrix.config == 'Release'] }}
+          MESHLIB_BUILD_DEBUG: ${{ fromJSON('["OFF", "ON"]')[matrix.config == 'Debug'] }}
+          CMAKE_CXX_COMPILER: ${{ matrix.cxx-compiler }}
+          MR_VERSION: ${{ inputs.app_version }}
+          # options to be passed to cmake
+          MR_CMAKE_OPTIONS: >
+            -DMR_CXX_STANDARD=${{ matrix.cxx-standard }}
+            -DMR_PCH_USE_EXTRA_HEADERS=ON
+            -DMESHLIB_BUILD_MRMESH_PY_LEGACY=${{ fromJSON('["ON", "OFF"]')[inputs.mrbind] }}
+
+      - name: Generate and build MRBind bindings
+        if: ${{ inputs.mrbind }}
+        env:
+          CXX: ${{ matrix.cxx-compiler }}
+        run: make -f scripts/mrbind/generate.mk MODE=none -B --trace MESHLIB_SHLIB_DIR=build/${{matrix.config}}/bin
+      
+      - name: Create Python Stubs
+        run: python3 ./scripts/wheel/create_stubs.py
+
+      - name: Upload Python Stubs
+        uses: actions/upload-artifact@v4
+        with:
+          name: PythonStubs
+          path: ./scripts/wheel/meshlib/meshlib/*.pyi
+          retention-days: 1
+
+  update-dev-documentation:
+    needs: [ create-stubs ]
+    uses: ./.github/workflows/update-docs.yml
+    with:
+      output_folder: ${{ inputs.output_folder }}
+    secrets: inherit
