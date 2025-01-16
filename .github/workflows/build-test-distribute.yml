@@ -237,6 +237,36 @@ jobs:
          name: DistributivesNuGet
          path: MeshLib.nupkg
          retention-days: 1
+  sign-nuget:
+    timeout-minutes: 10
+    needs: create-nuget-package
+    runs-on: [windows-x64-codesign]
+    steps:
+      - name: Remove old local NuGet packages
+        run: Remove-Item "MeshLib*.nupkg"
+        
+      - name: Download NuGet package
+        uses: actions/download-artifact@v4
+        with:
+          pattern: DistributivesNuGet*
+          
+      - name: Delete unsigned NuGet package
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: DistributivesNuGet*
+          failOnError: false
+     
+      - name: Sign NuGet package with certificate
+        run: |
+          jsign --storetype ETOKEN --storepass "${{ secrets.WINDOWS_SIGNTOOL_KC_PARAM_TOKEN_PASSWORD }}" -tsaurl http://timestamp.digicert.com MeshLib.nupkg
+          nuget verify -All -Verbosity detailed MeshLib.nupkg
+          
+      - name: Upload Signed NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: DistributivesNuGet
+          path: MeshLib.nupkg
+          retention-days: 1
 
   upload-distributions:
     if: ${{ !cancelled() && needs.config.outputs.upload_artifacts == 'true' }}

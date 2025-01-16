@@ -19,7 +19,7 @@ jobs:
       - uses: actions-ecosystem/action-get-latest-tag@v1
         id: get-latest-tag
         
-  sign-upload:
+upload:
     timeout-minutes: 10
     needs: setup
     runs-on: [windows-x64-codesign]
@@ -35,11 +35,6 @@ jobs:
                               --repo $env:GITHUB_REPOSITORY `
                               --pattern "MeshLib_${{needs.setup.outputs.version_tag}}.nupkg"    
      
-      - name: Sign NuGet package with certificate
-        run: |
-          jsign --storetype ETOKEN --storepass "${{ secrets.WINDOWS_SIGNTOOL_KC_PARAM_TOKEN_PASSWORD }}" -tsaurl http://timestamp.digicert.com MeshLib_${{needs.setup.outputs.version_tag}}.nupkg
-          nuget verify -All -Verbosity detailed MeshLib_${{needs.setup.outputs.version_tag}}.nupkg
-      
       - name: Upload signed NuGet package
         run: |
           nuget push MeshLib_${{needs.setup.outputs.version_tag}}.nupkg ${{ secrets.NUGET_API_KEY }} -Source https://api.nuget.org/v3/index.json
