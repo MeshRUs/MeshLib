@@ -6,7 +6,7 @@ on:
       # manually defined values
       vcpkg_version:
         description: "vcpkg version"
-        value: "2024.10.21" # VCPKG-AUTO-UPDATE - refer 'vcpkg-auto-update.yml' for more info
+        value: "2025.01.13" # VCPKG-AUTO-UPDATE - refer 'vcpkg-auto-update.yml' for more info
       # automatically computed or tag-based values
       app_version:
         description: "Version without namespace: v1.2.3.4"

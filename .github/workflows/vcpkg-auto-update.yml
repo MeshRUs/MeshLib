@@ -1,4 +1,4 @@
-name: Update Vcpkg Tag
+name: Vcpkg - Update Tag
 
 on:
   workflow_dispatch:
@@ -59,7 +59,7 @@ jobs:
           git config --global user.name "meshinspector-bot"
           
           # Create new branch
-          new_branch="vcpkg-update-${{ steps.get-latest-tag.outputs.latest_vcpkg_tag }}"
+          new_branch="vcpkg/vcpkg-update-${{ steps.get-latest-tag.outputs.latest_vcpkg_tag }}"
           git checkout -b ${new_branch}
 
           # Search and replace in all files except /thirdparty folder

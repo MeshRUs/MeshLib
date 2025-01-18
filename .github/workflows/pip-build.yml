@@ -14,7 +14,7 @@ on:
   workflow_call:
 
 env:
-  VCPKG-VERSION: '2024.10.21'
+  VCPKG-VERSION: '2025.01.13'
   CUDA-VERSION: '11.4.2.47141'
   CUDA-MAJOR: '11'
   CUDA-MINOR: '4'

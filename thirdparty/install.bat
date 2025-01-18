@@ -1,7 +1,7 @@
 @echo off
 REM The VCPKG_TAG variable represents the S3 folder and may not always exist in S3
 REM use "aws s3 ls s3://vcpkg-export/" to ls all available tags
-set VCPKG_TAG=2024.10.21
+set VCPKG_TAG=2025.01.13
 set VCPKG_DEFAULT_TRIPLET=x64-windows-meshlib
 
 setlocal enabledelayedexpansion

@@ -73,11 +73,18 @@ jobs:
           cxx_compiler: ${{ matrix.runner }} # runner name will be transformed to MSVC name (e.g. windows-2022 -> msvc-2022)
           build_config: ${{ matrix.config }}
 
-      - name: Checkout Vcpkg ${{ inputs.vcpkg_version }}
-        working-directory: C:\vcpkg
-        run: |
-          git fetch
-          git checkout ${{ inputs.vcpkg_version }}
+      - name: Clean Vcpkg Directory  
+        working-directory: C:\vcpkg  
+        run: git clean -ffdx  
+      
+      - name: Checkout & Update Vcpkg ${{ inputs.vcpkg_version }}  
+        working-directory: C:\vcpkg  
+        run: |  
+          git fetch  
+          git pull --rebase 
+          git checkout ${{ inputs.vcpkg_version }}  
+          bootstrap-vcpkg.bat
+          vcpkg.exe integrate install
 
       - name: Restore Vcpkg Cache
         uses: actions/cache@v4
