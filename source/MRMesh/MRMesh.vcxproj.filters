@@ -1257,6 +1257,9 @@
     <ClInclude Include="MRRadiusCompensation.h">
       <Filter>Source Files\Gcode</Filter>
     </ClInclude>
+    <ClInclude Include="MRPriorityQueue.h">
+      <Filter>Source Files\Basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MRParallelProgressReporter.cpp">

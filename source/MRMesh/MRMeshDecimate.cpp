@@ -13,7 +13,7 @@
 #include "MRMeshSubdivide.h"
 #include "MRMeshRelax.h"
 #include "MRLineSegm.h"
-#include <queue>
+#include "MRPriorityQueue.h"
 
 namespace MR
 {
@@ -40,8 +40,8 @@ private:
     {
         CollapseOptPos, ///< collapse the edge with target position optimization
         CollapseEnd,    ///< collapse the edge in one of its current vertices
-        Flip            ///< flip the edge inside quadrangle
-        // one more option is available to fit in 2 bits
+        Flip,           ///< flip the edge inside quadrangle
+        Invalid         ///< this edge was already deleted, skip it
     };
 
     struct QueueElement
@@ -56,7 +56,7 @@ private:
         bool operator < ( const QueueElement & r ) const { return asPair() < r.asPair(); }
     };
     static_assert( sizeof( QueueElement ) == 8 );
-    std::priority_queue<QueueElement> queue_;
+    PriorityQueue<QueueElement> queue_;
     UndirectedEdgeBitSet presentInQueue_;
     DecimateResult res_;
     std::vector<VertId> originNeis_;
@@ -70,6 +70,7 @@ private:
         QuadraticForm3f * outCollapseForm = nullptr, Vector3f * outCollapsePos = nullptr ) const;
     void addInQueueIfMissing_( UndirectedEdgeId ue );
     void flipEdge_( UndirectedEdgeId ue );
+    void intermediatePack_();
 
     enum class CollapseStatus
     {
@@ -331,7 +332,7 @@ void MeshDecimator::initializeQueue_()
     presentInQueue_.resize( mesh_.topology.undirectedEdgeSize(), false );
     for ( const auto & qe : calc.elements() )
         presentInQueue_.set( qe.uedgeId() );
-    queue_ = std::priority_queue<QueueElement>{ std::less<QueueElement>(), calc.takeElements() };
+    queue_ = PriorityQueue<QueueElement>{ std::less<QueueElement>(), calc.takeElements() };
 }
 
 QuadraticForm3f MeshDecimator::collapseForm_( UndirectedEdgeId ue, const Vector3f & collapsePos ) const
@@ -759,6 +760,51 @@ static void packMesh( Mesh & mesh, const DecimateSettings & settings,
         *outEmap = std::move( *pEmap );
 }
 
+void MeshDecimator::intermediatePack_()
+{
+    MR_TIMER
+    VertMap vmap;
+    WholeEdgeMap emap;
+    packMesh( mesh_, settings_, nullptr, &vmap, &emap );
+
+    if ( !settings_.vertForms )
+    {
+        assert( pVertForms_ == &myVertForms_ );
+        for ( VertId oldV{ 0 }; oldV < vmap.size(); ++oldV )
+            if ( auto newV = vmap[oldV] )
+                if ( newV < oldV )
+                    myVertForms_[newV] = myVertForms_[oldV];
+        myVertForms_.resize( mesh_.topology.vertSize() );
+    }
+
+    if ( !settings_.bdVerts )
+    {
+        assert( pBdVerts_ == &myBdVerts_ );
+        myBdVerts_ = myBdVerts_.getMapping( vmap, mesh_.topology.vertSize() );
+    }
+
+    auto packedUndirectedEdgeId = [&emap]( UndirectedEdgeId unpackedId )
+    {
+        auto packedEdgeId = emap[unpackedId];
+        return packedEdgeId ? packedEdgeId.undirected() : UndirectedEdgeId();
+    };
+
+    regionEdges_ = regionEdges_.getMapping( packedUndirectedEdgeId, mesh_.topology.undirectedEdgeSize() );
+
+    presentInQueue_ = presentInQueue_.getMapping( packedUndirectedEdgeId, mesh_.topology.undirectedEdgeSize() );
+
+    ParallelFor( size_t( 0 ), queue_.c.size(), [&]( size_t i )
+    {
+        auto & qe = queue_.c[i];
+        if ( qe.x.edgeOp == EdgeOp::Invalid )
+            return;
+        if ( auto ue = packedUndirectedEdgeId( qe.uedgeId() ) )
+            qe.x.uedgeId = ue;
+        else
+            qe.x.edgeOp = EdgeOp::Invalid;
+    } );
+}
+
 DecimateResult MeshDecimator::run()
 {
     MR_TIMER
@@ -779,12 +825,23 @@ DecimateResult MeshDecimator::run()
     int lastProgressFacesDeleted = 0;
     const int maxFacesDeleted = std::min(
         settings_.region ? (int)settings_.region->count() : mesh_.topology.numValidFaces(), settings_.maxDeletedFaces );
+    // intermediate packs shall improve performance of overall decimation
+    int nextPackOnNumFaces = settings_.packMesh ? mesh_.topology.numValidFaces() / 2 : 0;
     while ( !queue_.empty() )
     {
+        if ( settings_.packMesh && mesh_.topology.numValidFaces() <= nextPackOnNumFaces )
+        {
+            intermediatePack_();
+            nextPackOnNumFaces = mesh_.topology.numValidFaces() / 2;
+            if ( queue_.empty() )
+                break; // if old queue was filled only with invalid elements
+        }
         const auto topQE = queue_.top();
+        queue_.pop();
+        if ( topQE.x.edgeOp == EdgeOp::Invalid )
+            continue;
         const auto ue = topQE.uedgeId();
         assert( presentInQueue_.test( ue ) );
-        queue_.pop();
         if ( res_.facesDeleted >= settings_.maxDeletedFaces || res_.vertsDeleted >= settings_.maxDeletedVertices )
         {
             res_.errorIntroduced = std::sqrt( topQE.c );
