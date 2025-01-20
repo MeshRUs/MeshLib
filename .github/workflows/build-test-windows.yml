@@ -27,7 +27,7 @@ on:
 jobs:
   windows-build-test:
     timeout-minutes: 70
-    runs-on: ${{ matrix.runner }}
+    runs-on: [self-hosted, windows, x64, vs-2019, vcpkg-2024.10.21, meshinspector]
     strategy:
       fail-fast: false
       matrix:
@@ -45,11 +45,13 @@ jobs:
             CUDA-VERSION: '12.0.1.52833'
             CUDA-MAJOR: '12'
             CUDA-MINOR: '0'
+            vs: vs-2022
           - runner: windows-2019
             vc-path: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise'
             CUDA-VERSION: '11.4.2.47141'
             CUDA-MAJOR: '11'
             CUDA-MINOR: '4'
+            vs: vs-2019
     permissions:
       id-token: write # This is required for requesting the JWT
       contents: read  # This is required for actions/checkout
