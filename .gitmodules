@@ -9,7 +9,7 @@
 	url = https://gitlab.com/cantonios/eigen.git
 [submodule "thirdparty/pybind11"]
 	path = thirdparty/pybind11
-	url = https://github.com/pybind/pybind11.git
+	url = https://github.com/MeshInspector/mrbind-pybind11
 [submodule "thirdparty/expected"]
 	path = thirdparty/expected
 	url = https://github.com/Developer-Ecosystem-Engineering/expected.git

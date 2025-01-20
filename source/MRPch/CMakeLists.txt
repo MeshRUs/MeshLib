@@ -58,4 +58,11 @@ IF(MR_PCH)
   target_precompile_headers(${PROJECT_NAME} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/MRPch.h>"
   )
+
+  # `dladdr` in our patched `PYBIND11_MODULE(...)` needs this.
+  IF(NOT WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+      _GNU_SOURCE
+    )
+  ENDIF()
 ENDIF()

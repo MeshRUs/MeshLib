@@ -103,10 +103,9 @@ Expected<std::filesystem::path> SystemPath::getExecutablePath()
     return std::filesystem::path { path };
 #elif defined( __APPLE__ )
     char path[PATH_MAX];
-    uint32_t size = PATH_MAX + 1;
+    uint32_t size = PATH_MAX;
     if ( _NSGetExecutablePath( path, &size ) != 0 )
         return unexpected( "Executable path is too long" );
-    path[size] = '\0';
     return std::filesystem::path { path };
 #else
     char path[PATH_MAX];
@@ -238,7 +237,7 @@ const std::vector<SystemPath::SystemFontPaths>& SystemPath::getSystemFonts()
         }
     }
 
-    std::sort( allSystemFonts.begin(), allSystemFonts.end(), 
+    std::sort( allSystemFonts.begin(), allSystemFonts.end(),
         [] ( std::pair<std::filesystem::path, std::string>& v1, std::pair<std::filesystem::path, std::string>& v2 )
     {
         return MR::toLower( v1.second ) < MR::toLower( v2.second );

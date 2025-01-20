@@ -89,7 +89,7 @@ jobs:
           # related issue: https://github.com/actions/checkout/issues/1779
           export HOME=${RUNNER_TEMP}
           git config --global --add safe.directory '*'
-          git submodule update --init --depth 1 thirdparty/imgui thirdparty/parallel-hashmap
+          git submodule update --init --depth 1 thirdparty/imgui thirdparty/parallel-hashmap thirdparty/pybind11
 
       - name: Install thirdparty libs
         run: |
@@ -127,7 +127,7 @@ jobs:
         env:
           CXX: ${{ matrix.cxx-compiler }}
         run: make -f scripts/mrbind/generate.mk MODE=none -B --trace MESHLIB_SHLIB_DIR=build/${{matrix.config}}/bin
-      
+
       - name: Create Python Stubs
         if: ${{ inputs.mrbind && matrix.os == 'ubuntu22' && matrix.config == 'Release' && matrix.compiler == 'Clang' }}
         run: python3 ./scripts/wheel/create_stubs.py

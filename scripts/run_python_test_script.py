@@ -6,6 +6,7 @@ import argparse
 parser = argparse.ArgumentParser(description="Python Test Script")
 
 parser.add_argument("-cmd", dest="cmd", type=str, help='Overwrite python run cmd')
+parser.add_argument('-multi-cmd', dest='multi_cmd', action='store_true', help='Repeat tests several times, with python versions taken from `python_versions.txt`. Replaces `-cmd`.')
 parser.add_argument("-d", dest="dir", type=str, help='Path to tests')
 parser.add_argument("-s", dest="smoke", type=str, help='Run reduced smoke set')
 parser.add_argument("-bv", dest="bindings_vers", type=str,
@@ -16,11 +17,11 @@ parser.add_argument("-a", dest="pytest_args", type=str,
 args = parser.parse_args()
 print(args)
 
-python_cmd = "py -3.11 "
+python_cmds = ["py -3.11"]
 platformSystem = platform.system()
 
 if platformSystem == 'Linux':
-    python_cmd = "python3 "
+    python_cmds = ["python3"]
 
     os_name = ""
     os_version = ""
@@ -34,22 +35,25 @@ if platformSystem == 'Linux':
 
     if "ubuntu" in os_name.lower():
         if os_version.startswith("20"):
-            python_cmd = "python3.8 "
+            python_cmds = ["python3.8"]
         elif os_version.startswith("22"):
-            python_cmd = "python3.10 "
+            python_cmds = ["python3.10"]
     elif "fedora" in os_name.lower():
         if os_version.startswith("35"):
-            python_cmd = "python3.9 "
+            python_cmds = ["python3.9"]
         elif os_version.startswith("37"):
-            python_cmd = "python3.11 "
+            python_cmds = ["python3.11"]
         elif os_version.startswith("39"):
-            python_cmd = "python3.12 "
+            python_cmds = ["python3.12"]
 
 elif platformSystem == 'Darwin':
-    python_cmd = "python3.10 "
+    python_cmds = ["python3.10"]
 
 if args.cmd:
-    python_cmd = str(args.cmd).strip() + " "
+    python_cmds = [str(args.cmd).strip()]
+elif args.multi_cmd:
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/mrbind-pybind11/python_versions.txt") as file:
+        python_cmds = ["python" + line.rstrip() for line in file]
 
 directory = os.getcwd()
 try:
@@ -69,9 +73,6 @@ else:
 os.environ["MeshLibPyModulesPath"] = os.getcwd()
 os.chdir(directory)
 
-# remove meshlib package if installed to not shadow dynamically attached
-os.system(python_cmd + "-m pip uninstall -y meshlib")
-
 #command line to start test
 pytest_cmd = "-m pytest -s -v --basetemp=../pytest_temp --durations 30"
 if args.bindings_vers == '2':
@@ -89,8 +90,12 @@ else:
 if args.pytest_args:
     pytest_cmd += f' {args.pytest_args}'
 
-print(python_cmd + pytest_cmd)
-res = os.system(python_cmd + pytest_cmd)
+for py_cmd in python_cmds:
+    # remove meshlib package if installed to not shadow dynamically attached
+    os.system(py_cmd + " -m pip uninstall -y meshlib")
+
+    print(py_cmd + " " + pytest_cmd)
+    res = os.system(py_cmd + " " + pytest_cmd)
 
 if res != 0:
     sys.exit(1)

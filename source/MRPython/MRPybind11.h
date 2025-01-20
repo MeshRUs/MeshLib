@@ -12,6 +12,7 @@ MR_SUPPRESS_WARNING_PUSH
 #pragma warning( disable: 4191 ) // 'reinterpret_cast': unsafe conversion from 'PyObject *(__cdecl *)(PyObject *,PyObject *,PyObject *)' to 'void (__cdecl *)(void)'
 #pragma warning( disable: 4355 ) // 'this': used in base member initializer list
 #pragma warning( disable: 4464 ) // relative include path contains '..'
+#pragma warning( disable: 4548 ) // expression before comma has no effect; expected expression with side-effect
 #endif
 
 #include <pybind11/pybind11.h>

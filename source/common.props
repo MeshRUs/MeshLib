@@ -35,7 +35,7 @@
     <PythonIncludePath>$(VcpkgCurrentInstalledDir)\include\python3.11\</PythonIncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Globals">
-    <PythonLibPath>$(VcpkgCurrentInstalledDir)\lib\python$(PythonVersion).lib</PythonLibPath>
+    <PythonLibPath>$(VcpkgCurrentInstalledDir)\lib\python3.lib</PythonLibPath>
     <PythonDllPath>$(VcpkgCurrentInstalledDir)\bin\python$(PythonVersion).dll</PythonDllPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
