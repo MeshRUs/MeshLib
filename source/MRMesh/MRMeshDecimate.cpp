@@ -13,7 +13,7 @@
 #include "MRMeshSubdivide.h"
 #include "MRMeshRelax.h"
 #include "MRLineSegm.h"
-#include <queue>
+#include "MRPriorityQueue.h"
 
 namespace MR
 {
@@ -56,8 +56,10 @@ private:
         bool operator < ( const QueueElement & r ) const { return asPair() < r.asPair(); }
     };
     static_assert( sizeof( QueueElement ) == 8 );
-    std::priority_queue<QueueElement> queue_;
+    PriorityQueue<QueueElement> queue_;
     UndirectedEdgeBitSet validInQueue_; // bit set if the edge is both present in queue_ and not lone
+    UndirectedEdgeBitSet outdated_; // true if edge's error in the queue may be outdated (too optimistic) due to nearby collapse
+    int numOutdated_ = 0; // total number of not lone outdated edges in the queue
     DecimateResult res_;
     std::vector<VertId> originNeis_;
     std::vector<Vector3f> triDblAreas_; // directed double areas of newly formed triangles to check that they are consistently oriented
@@ -65,10 +67,19 @@ private:
 
     bool initialize_();
     void initializeQueue_();
+    std::vector<QueueElement> makeQueueElements_();
+    void updateQueue_();
     QuadraticForm3f collapseForm_( UndirectedEdgeId ue, const Vector3f & collapsePos ) const;
     std::optional<QueueElement> computeQueueElement_( UndirectedEdgeId ue, bool optimizeVertexPos,
         QuadraticForm3f * outCollapseForm = nullptr, Vector3f * outCollapsePos = nullptr ) const;
-    void addInQueueIfMissing_( UndirectedEdgeId ue );
+
+    /// adds given edge in the queue if it was missing there;
+    /// returns true only if the edge was already in queue with probably outdated error
+    bool addInQueueIfMissing_( UndirectedEdgeId ue );
+
+    /// adds given edges (currently missing) in queue
+    void addInQueue_( UndirectedEdgeId ue, bool optimizeVertexPos );
+
     void flipEdge_( UndirectedEdgeId ue );
 
     enum class CollapseStatus
@@ -136,6 +147,8 @@ MeshDecimator::MeshDecimator( Mesh & mesh, const DecimateSettings & settings )
     ] ( EdgeId del, EdgeId rem )
     {
         validInQueue_.reset( del );
+        if ( outdated_.test_set( del, false ) )
+            --numOutdated_;
 
         if ( notFlippable && notFlippable->test_set( del.undirected(), false ) && rem )
             notFlippable->autoResizeSet( rem.undirected() );
@@ -168,42 +181,6 @@ MeshDecimator::MeshDecimator( Mesh & mesh, const DecimateSettings & settings )
             onEdgeDel( del, rem );
     };
 }
-
-class MeshDecimator::EdgeMetricCalc 
-{
-public:
-    EdgeMetricCalc( const MeshDecimator & decimator ) : decimator_( decimator ) { }
-    EdgeMetricCalc( EdgeMetricCalc & x, tbb::split ) : decimator_( x.decimator_ ) { }
-    void join( EdgeMetricCalc & y ) { auto yes = y.takeElements(); elems_.insert( elems_.end(), yes.begin(), yes.end() ); }
-
-    const std::vector<QueueElement> & elements() const { return elems_; }
-    std::vector<QueueElement> takeElements() { return std::move( elems_ ); }
-
-    void operator()( const tbb::blocked_range<UndirectedEdgeId> & r ) 
-    {
-        const bool optimizeVertexPos = decimator_.settings_.optimizeVertexPos;
-        for ( UndirectedEdgeId ue = r.begin(); ue < r.end(); ++ue ) 
-        {
-            EdgeId e{ ue };
-            if ( decimator_.regionEdges_.empty() )
-            {
-                if ( decimator_.mesh_.topology.isLoneEdge( e ) )
-                    continue;
-            }
-            else
-            {
-                if ( !decimator_.regionEdges_.test( ue ) )
-                    continue;
-            }
-            if ( auto qe = decimator_.computeQueueElement_( ue, optimizeVertexPos ) )
-                elems_.push_back( *qe );
-        }
-    }
-
-public:
-    const MeshDecimator & decimator_;
-    std::vector<QueueElement> elems_;
-};
 
 QuadraticForm3f computeFormAtVertex( const MR::MeshPart & mp, MR::VertId v, float stabilizer, bool angleWeigted, const UndirectedEdgeBitSet * creases )
 {
@@ -317,6 +294,49 @@ bool MeshDecimator::initialize_()
     return true;
 }
 
+auto MeshDecimator::makeQueueElements_() -> std::vector<QueueElement>
+{
+    MR_TIMER
+
+    const auto sz = mesh_.topology.undirectedEdgeSize();
+    validInQueue_.clear();
+    validInQueue_.resize( sz, false );
+
+    tbb::enumerable_thread_specific<std::vector<QueueElement>> threadData;
+    BitSetParallelForAll( validInQueue_, [&]( UndirectedEdgeId ue )
+    {
+        if ( regionEdges_.empty() )
+        {
+            if ( mesh_.topology.isLoneEdge( ue ) )
+                return;
+        }
+        else
+        {
+            if ( !regionEdges_.test( ue ) )
+                return;
+        }
+        if ( auto qe = computeQueueElement_( ue, settings_.optimizeVertexPos ) )
+        {
+            threadData.local().push_back( *qe );
+            validInQueue_.set( ue );
+        }
+    } );
+
+    size_t queueSize = 0;
+    for ( const auto & v : threadData )
+        queueSize += v.size();
+
+    std::vector<QueueElement> elms;
+    elms.reserve( queueSize );
+    for ( auto & v : threadData )
+    {
+        elms.insert( elms.end(), v.begin(), v.end() );
+        v = {};
+    }
+    assert( elms.size() == queueSize );
+    return elms;
+}
+
 void MeshDecimator::initializeQueue_()
 {
     MR_TIMER
@@ -324,14 +344,49 @@ void MeshDecimator::initializeQueue_()
     // free space occupied by existing queue
     queue_ = {};
 
-    EdgeMetricCalc calc( *this );
-    parallel_reduce( tbb::blocked_range<UndirectedEdgeId>( UndirectedEdgeId{0}, UndirectedEdgeId{mesh_.topology.undirectedEdgeSize()} ), calc );
+    queue_ = PriorityQueue<QueueElement>{ std::less<QueueElement>(), makeQueueElements_() };
 
-    validInQueue_.clear();
-    validInQueue_.resize( mesh_.topology.undirectedEdgeSize(), false );
-    for ( const auto & qe : calc.elements() )
-        validInQueue_.set( qe.uedgeId() );
-    queue_ = std::priority_queue<QueueElement>{ std::less<QueueElement>(), calc.takeElements() };
+    outdated_.clear();
+    outdated_.resize( mesh_.topology.undirectedEdgeSize(), false );
+    numOutdated_ = 0;
+}
+
+void MeshDecimator::updateQueue_()
+{
+    MR_TIMER
+
+    Timer t( "compute" );
+    auto & vec = queue_.c;
+    // recompute errors for outdated edges
+    BitSet del( vec.size(), false );
+    BitSetParallelForAll( del, [&]( size_t i )
+    {
+        auto& qe = vec[i];
+        const auto ue = qe.uedgeId();
+        if ( !validInQueue_.test( ue ) )
+            return;
+        if ( !outdated_.test( ue ) )
+            return;
+        if ( auto n = computeQueueElement_( qe.uedgeId(), qe.x.edgeOp == EdgeOp::CollapseOptPos ) )
+            qe = *n;
+        else
+            del.set( i );
+    } );
+    outdated_.reset( 0_ue, outdated_.size() );
+    numOutdated_ = 0;
+
+    t.restart( "invalidate" );
+    // removed valid flag for outdated edges with failed computeQueueElement_
+    for ( auto i : del )
+        validInQueue_.reset( vec[i].uedgeId() );
+
+    t.restart( "remove deleted" );
+    // remove invalid and deleted edges from the queue
+    std::erase_if( vec, [&]( QueueElement & qe ) { return !validInQueue_.test( qe.uedgeId() ); } );
+
+    t.restart( "restore heap" );
+    // sort elements to restore heap property
+    std::make_heap( vec.begin(), vec.end() );
 }
 
 QuadraticForm3f MeshDecimator::collapseForm_( UndirectedEdgeId ue, const Vector3f & collapsePos ) const
@@ -436,16 +491,25 @@ auto MeshDecimator::computeQueueElement_( UndirectedEdgeId ue, bool optimizeVert
     return res;
 }
 
-void MeshDecimator::addInQueueIfMissing_( UndirectedEdgeId ue )
+bool MeshDecimator::addInQueueIfMissing_( UndirectedEdgeId ue )
 {
     if ( !regionEdges_.empty() && !regionEdges_.test( ue ) )
-        return;
+        return false;
     if ( validInQueue_.test( ue ) )
-        return;
-    if ( auto qe = computeQueueElement_( ue, settings_.optimizeVertexPos ) )
+        return true;
+    addInQueue_( ue, settings_.optimizeVertexPos );
+    return false;
+}
+
+void MeshDecimator::addInQueue_( UndirectedEdgeId ue, bool optimizeVertexPos )
+{
+    assert ( !validInQueue_.test( ue ) );
+    if ( auto qe = computeQueueElement_( ue, optimizeVertexPos ) )
     {
         queue_.push( *qe );
         validInQueue_.set( ue );
+        if ( outdated_.test_set( ue, false ) )
+            --numOutdated_;
     }
 }
 
@@ -676,7 +740,8 @@ VertId MeshDecimator::forceCollapse_( EdgeId edgeToCollapse, const Vector3f & co
         // update edges around remaining vertex
         for ( EdgeId e : orgRing( mesh_.topology, vo ) )
         {
-            addInQueueIfMissing_( e.undirected() );
+            if ( addInQueueIfMissing_( e.undirected() ) && !outdated_.test_set( e.undirected() ) )
+                ++numOutdated_; // collapse error for of all neighbor edges with vo must increase
             if ( mesh_.topology.left( e ) )
                 addInQueueIfMissing_( mesh_.topology.prev( e.sym() ).undirected() );
         }
@@ -781,6 +846,13 @@ DecimateResult MeshDecimator::run()
         settings_.region ? (int)settings_.region->count() : mesh_.topology.numValidFaces(), settings_.maxDeletedFaces );
     while ( !queue_.empty() )
     {
+        // update queue elements if there is significant portion of outdated edges there
+        if ( queue_.size() >= 1024 && queue_.size() < 5 * numOutdated_ )
+        {
+            updateQueue_();
+            if ( queue_.empty() )
+                break; // if old queue was filled only with invalid elements
+        }
         const auto topQE = queue_.top();
         const auto ue = topQE.uedgeId();
         queue_.pop();
@@ -817,6 +889,8 @@ DecimateResult MeshDecimator::run()
         if ( qe->c > topQE.c )
         {
             queue_.push( *qe );
+            if ( outdated_.test_set( ue, false ) )
+                --numOutdated_;
             continue;
         }
 
@@ -839,14 +913,7 @@ DecimateResult MeshDecimator::run()
             if ( canCollapseRes.status != CollapseStatus::Ok )
             {
                 if ( topQE.x.edgeOp == EdgeOp::CollapseOptPos && geomFail_( canCollapseRes.status ) )
-                {
-                    qe = computeQueueElement_( ue, false );
-                    if ( qe )
-                    {
-                        queue_.push( *qe );
-                        validInQueue_.set( ue );
-                    }
-                }
+                    addInQueue_( ue, false );
                 continue;
             }
             if ( twin )
