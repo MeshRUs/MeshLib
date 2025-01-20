@@ -9,6 +9,9 @@ Following code presents example of converting text to mesh
 \include MeshFromText.dox.cpp
 \sa \ref MR::createSymbolsMesh
 
+- <b class="tab-title">Python</b>
+\include MeshFromText.dox.py
+
 </div>
 
  */

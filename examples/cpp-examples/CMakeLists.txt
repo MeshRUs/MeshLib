@@ -8,6 +8,9 @@ find_package(MeshLib CONFIG REQUIRED)
 find_package(TBB REQUIRED)
 
 set(EXAMPLES
+  FreeFormDeformation
+  GlobalRegistration
+  LaplacianDeformation
   MeshBoolean
   MeshDecimate
   MeshExport
@@ -18,7 +21,10 @@ set(EXAMPLES
   MeshLoadSave
   MeshModification
   MeshOffset
+  MeshResolveDegenerations
   MeshStitchHole
+  NoiseDenoise
+  Triangulation
 )
 
 foreach(TARGET ${EXAMPLES})
@@ -29,8 +35,9 @@ foreach(TARGET ${EXAMPLES})
 endforeach()
 # MeshFromText additionally depends on MRSymbolMesh
 target_link_libraries(MeshFromText PRIVATE MeshLib::MRSymbolMesh)
-# MeshOffset additionally depends on MRVoxels
+# MeshOffset and Triangulation additionally depend on MRVoxels
 target_link_libraries(MeshOffset PRIVATE MeshLib::MRVoxels)
+target_link_libraries(Triangulation PRIVATE MeshLib::MRVoxels)
 # MeshLoadSave additionally depends on MRIOExtras
 target_link_libraries(MeshLoadSave PRIVATE MeshLib::MRIOExtras)
 

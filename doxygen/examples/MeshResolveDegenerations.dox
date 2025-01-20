@@ -5,6 +5,10 @@ Example of resolving degenerated faces
 
 <div class="tabbed">
 
+- <b class="tab-title">C++</b>
+\include MeshResolveDegenerations.dox.cpp
+- <b class="tab-title">Python</b>
+\include MeshResolveDegenerations.dox.py
 - <b class="tab-title">C</b>
 \include MeshResolveDegenerations.dox.c
 

@@ -24,7 +24,8 @@ int main()
         std::cerr << saveRes.error() << std::endl;
         return 1;
     }
-    
+
+    // More mesh formats are available in the MRIOExtras library
     std::filesystem::path outCtmFilePath = "mesh.ctm";
     saveRes = MR::MeshSave::toCtm( loadRes.value(), outCtmFilePath );
     if ( !saveRes.has_value() )

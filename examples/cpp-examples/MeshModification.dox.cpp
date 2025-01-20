@@ -9,7 +9,7 @@ int main()
     MR::Mesh mesh = MR::makeTorus();
 
     // Relax mesh (5 iterations)
-    MR::relax( mesh, {{5}} );
+    MR::relax( mesh, {{ .iterations = 5 }} );
 
     // Subdivide mesh
     MR::SubdivideSettings props;

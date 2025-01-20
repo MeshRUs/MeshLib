@@ -5,6 +5,9 @@ Example of using Free Form deformation of the mesh
 
 <div class="tabbed">
 
+- <b class="tab-title">C++</b>
+\include FreeFormDeformation.dox.cpp
+
 - <b class="tab-title">Python</b>
 \note Python API version 3 and later
 

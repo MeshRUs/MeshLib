@@ -5,6 +5,9 @@
 
 <div class="tabbed">
 
+- <b class="tab-title">C++</b>
+\include NoiseDenoise.dox.cpp
+
 - <b class="tab-title">Python</b>
 \note Python API version 3 and later
 
