@@ -36,7 +36,7 @@ def test_make_bridge_edge(input_case, tmp_path):
     ref_mesh = mrmeshpy.loadMesh(ref_mesh_path)
 
     with check:
-        compare_meshes_similarity(mesh, ref_mesh)
+        compare_meshes_similarity(mesh, ref_mesh, edges_thresh=0)
 
 
 @pytest.mark.smoke
@@ -68,4 +68,4 @@ def test_make_bridge(input_case, tmp_path):
     ref_mesh = mrmeshpy.loadMesh(ref_mesh_path)
 
     with check:
-        compare_meshes_similarity(mesh, ref_mesh)
+        compare_meshes_similarity(mesh, ref_mesh, edges_thresh=0)

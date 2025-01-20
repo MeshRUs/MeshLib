@@ -33,6 +33,7 @@ def compare_meshes_similarity(mesh1: mrmeshpy.Mesh, mesh2: mrmeshpy.Mesh,
                               vol_thresh=0.005,
                               area_thresh=0.005,
                               verts_thresh=0.005,
+                              edges_thresh=0.005,
                               skip_volume=False):
     """
     Compare two meshes and assert them to similarity by different params.
@@ -58,22 +59,36 @@ def compare_meshes_similarity(mesh1: mrmeshpy.Mesh, mesh2: mrmeshpy.Mesh,
     if not skip_volume:
         with check:
             #  check on meshes volume
-            assert abs(mesh1.volume() - mesh2.volume()) / min(mesh1.volume(), mesh2.volume()) < vol_thresh, (
-                f"Volumes of result and reference differ too much, \nvol1={mesh1.volume()}\nvol2={mesh2.volume()}\n"
+            vol_1 = mesh1.volume()
+            vol_2 = mesh2.volume()
+            assert abs(vol_1 - vol_2) / min(vol_1, vol_2) < vol_thresh, (
+                f"Volumes of result and reference differ too much, \nvol1={vol_1}\nvol2={vol_2}\n"
                 f"relative threshold is {vol_thresh}")
     with check:
         #  check on meshes area
-        assert abs(mesh1.area() - mesh2.area()) / min(mesh1.area(), mesh2.area()) < area_thresh, (
-            f"Areas of result and reference differ too much, \narea1={mesh1.area()}\narea2={mesh2.area()}\n"
+        area_1 = mesh1.area()
+        area_2 = mesh2.area()
+        assert abs(area_1 - area_2) / min(area_1, area_2) < area_thresh, (
+            f"Areas of result and reference differ too much, \narea1={area_1}\narea2={area_2}\n"
             f"relative threshold is {area_thresh}")
         #  check on meshes vertices number
     with check:
-        if mesh1.topology.numValidVerts() - mesh2.topology.numValidVerts() != 0:
-            assert abs(mesh1.topology.numValidVerts() - mesh2.topology.numValidVerts()) / min(mesh1.topology.numValidVerts(),
-                                                                        mesh2.topology.numValidVerts()) < verts_thresh, (
+        verts_1 = mesh1.topology.numValidVerts()
+        verts_2 = mesh2.topology.numValidVerts()
+        if verts_1 != verts_2:
+            assert abs(verts_1 - mesh2.topology.numValidVerts()) / min(verts_1,
+                                                                        verts_2) < verts_thresh, (
                 f"Vertex numbers of result and reference differ too much, \n"
-                f"verts1={mesh1.topology.numValidVerts()}\nverts2={mesh2.topology.numValidVerts()}\n"
+                f"verts1={verts_1}\nverts2={verts_2}\n"
                 f"relative threshold is {verts_thresh}")
+    with check:
+        edges_1 = mesh1.topology.computeNotLoneUndirectedEdges()
+        edges_2 = mesh2.topology.computeNotLoneUndirectedEdges()
+        if edges_1 != edges_2:
+            assert abs(edges_1 - edges_2) / min(edges_1, edges_2) < edges_thresh, (
+                f"Edge numbers of result and reference differ too much, \n"
+                f"edges1={edges_1}\nedges2={edges_2}\n"
+                f"relative threshold is {edges_thresh}")
 
 
 def compare_mesh(mesh1: mrmeshpy.Mesh or Path or str, ref_file_path: Path, multi_ref=True):
