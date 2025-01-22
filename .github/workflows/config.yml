@@ -179,3 +179,82 @@ jobs:
           else
             echo "matrix=$(jq -c . < .github/workflows/matrix/ubuntu-x64-minimal-config.json)" >> $GITHUB_OUTPUT
           fi
+
+  linux-image-build-upload:
+    needs: [prepare-config]
+    if: ${{ needs.prepare-config.outputs.linux-changes == 'true' && !contains( github.event.pull_request.labels.*.name, 'skip-image-rebuild' ) }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [ ubuntu20, ubuntu22, ubuntu24, fedora39, emscripten ]
+        arch: [ x64, arm64 ]
+        exclude:
+          - distro: fedora39
+            arch: arm64
+          - distro: emscripten
+            arch: x64
+        include:
+          - arch: x64
+            image-suffix: ''
+            os: ubuntu-latest
+          - arch: arm64
+            image-suffix: '-arm64'
+            os: [ self-hosted, linux-arm64 ]
+    runs-on: ${{ matrix.os }}
+    env:
+      dockerfile: ${{ matrix.distro }}Dockerfile
+      image: meshlib/meshlib-${{ matrix.distro }}${{ matrix.image-suffix }}:${{ needs.prepare-config.outputs.docker-image-tag }}
+    steps:
+      - name: Remove unused Docker data
+        run: docker system prune --force --all --volumes
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: meshlib
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Linux image
+        run: docker build -f ./docker/${{ env.dockerfile }} -t ${{ env.image }} . --progress=plain
+
+      - name: Push Linux image
+        run: docker push ${{ env.image }}
+
+      - name: Remove unused Docker data
+        run: docker system prune --force --all --volumes
+
+  windows-vcpkg-build-upload:
+    needs: [prepare-config]
+    if: ${{ needs.prepare-config.outputs.windows-changes == 'true' && !contains( github.event.pull_request.labels.*.name, 'skip-image-rebuild' )}}
+    timeout-minutes: 240
+    runs-on: windows-2022
+    steps:
+      - name: Setup vcpkg
+        working-directory: C:\vcpkg
+        run: |
+          git fetch
+          git checkout ${{ inputs.vcpkg_version }}
+          bootstrap-vcpkg.bat
+          vcpkg.exe integrate install
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Build and cache vcpkg
+        run: .\thirdparty\install.bat --write-s3
+

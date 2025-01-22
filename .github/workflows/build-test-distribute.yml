@@ -19,6 +19,7 @@ jobs:
   # use the ${{ needs.config.outputs.bool-param == 'true' }} construction to check boolean values
   config:
     uses: ./.github/workflows/config.yml
+    secrets: inherit
 
   debug-config:
     needs: config
@@ -29,16 +30,6 @@ jobs:
           echo << EOF
           ${{ toJSON( needs.config.outputs ) }}
           EOF
-
-  prepare-image:
-    needs: config
-    uses: ./.github/workflows/prepare-images.yml
-    with:
-      docker_image_tag:           ${{ needs.config.outputs.docker_image_tag }}
-      need_linux_image_rebuild:   ${{ needs.config.outputs.need_linux_image_rebuild == 'true' }}
-      need_windows_vcpkg_rebuild: ${{ needs.config.outputs.need_windows_vcpkg_rebuild == 'true' }}
-      vcpkg_version:              ${{ needs.config.outputs.vcpkg_version }}
-    secrets: inherit
 
   versioning-and-release-url:
     needs: config
@@ -52,7 +43,7 @@ jobs:
 
   windows-build-test:
     if: ${{ needs.config.outputs.build_enable_windows == 'true' }}
-    needs: [ config, prepare-image ]
+    needs: [ config ]
     uses: ./.github/workflows/build-test-windows.yml
     with:
       full_config_build:     ${{ needs.config.outputs.full_config_build == 'true' }}
@@ -64,7 +55,7 @@ jobs:
 
   ubuntu-arm64-build-test:
     if: ${{ needs.config.outputs.build_enable_ubuntu_arm64 == 'true' }}
-    needs: [ config, prepare-image ]
+    needs: [ config ]
     uses: ./.github/workflows/build-test-ubuntu-arm64.yml
     with:
       app_version:           ${{ needs.config.outputs.app_version }}
@@ -77,7 +68,7 @@ jobs:
 
   ubuntu-x64-build-test:
     if: ${{ needs.config.outputs.build_enable_ubuntu_x64 == 'true' }}
-    needs: [ config, prepare-image ]
+    needs: [ config ]
     uses: ./.github/workflows/build-test-ubuntu-x64.yml
     with:
       app_version:           ${{ needs.config.outputs.app_version }}
@@ -91,7 +82,7 @@ jobs:
 
   fedora-build-test:
     if: ${{ needs.config.outputs.build_enable_fedora == 'true' }}
-    needs: [ config, prepare-image ]
+    needs: [ config ]
     uses: ./.github/workflows/build-test-fedora.yml
     with:
       app_version:           ${{ needs.config.outputs.app_version }}
@@ -104,7 +95,7 @@ jobs:
 
   emscripten-build-test:
     if: ${{ needs.config.outputs.build_enable_emscripten == 'true' }}
-    needs: [ config, prepare-image ]
+    needs: [ config ]
     uses: ./.github/workflows/build-test-emscripten.yml
     with:
       docker_image_tag: ${{ needs.config.outputs.docker_image_tag }}
