@@ -38,14 +38,14 @@ jobs:
         full_config_build:
           - ${{ fromJSON( inputs.full_config_build ) }}
         exclude:
-          # Do not run Release Clang 17 build on every commit (but only once a day)
+          # Do not run Debug Clang 17 build on every commit (but only once a day)
           - full_config_build: false
             compiler: Clang 17
-            config: Release
-          # Do not run Debug GCC 13 build on every commit (but only once a day)
+            config: Debug
+          # Do not run Release GCC 13 build on every commit (but only once a day)
           - full_config_build: false
             compiler: GCC 13
-            config: Debug
+            config: Release
         include:
           - compiler: Clang 17
             cxx-compiler: /usr/bin/clang++-17
@@ -136,18 +136,18 @@ jobs:
           upload_test_artifacts: ${{ inputs.upload_test_artifacts }}
 
       - name: Create RPM
-        if: ${{ matrix.config == 'Release' && matrix.compiler == 'GCC 13' }}
+        if: ${{ matrix.config == 'Release' && matrix.compiler == 'Clang 17' }}
         env:
           MESHLIB_BUILD_RELEASE: ON
           MESHLIB_BUILD_DEBUG: OFF
         run: ./scripts/distribution_rpm.sh ${{ inputs.app_version }}
 
       - name: Extract RPM
-        if: ${{ matrix.config == 'Release' && matrix.compiler == 'GCC 13' }}
+        if: ${{ matrix.config == 'Release' && matrix.compiler == 'Clang 17' }}
         run: rpm2cpio meshlib-dev.rpm | cpio --extract --make-directories --preserve-modification-time --directory=$(pwd)/meshlib_install/
 
       - name: Build C++ examples
-        if: ${{ matrix.config == 'Release' && matrix.compiler == 'GCC 13' }}
+        if: ${{ matrix.config == 'Release' && matrix.compiler == 'Clang 17' }}
         run: |
           cmake \
             -S examples/cpp-examples \
@@ -159,7 +159,7 @@ jobs:
             --parallel $(nproc)
 
       - name: Build C examples
-        if: ${{ matrix.config == 'Release' && matrix.compiler == 'GCC 13'}}
+        if: ${{ matrix.config == 'Release' && matrix.compiler == 'Clang 17'}}
         run: |
           cmake \
             -S examples/c-examples \
@@ -171,7 +171,7 @@ jobs:
             --parallel $(nproc)
 
       - name: Upload Fedora Developer Distribution
-        if: ${{ inputs.upload_artifacts && matrix.config == 'Release' && matrix.compiler == 'GCC 13' }}
+        if: ${{ inputs.upload_artifacts && matrix.config == 'Release' && matrix.compiler == 'Clang 17' }}
         uses: actions/upload-artifact@v4
         with:
           name: Distributives_fedora39-x86

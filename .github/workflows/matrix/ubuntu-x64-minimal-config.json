@@ -20,7 +20,7 @@
     },
     {
       "os": "ubuntu24",
-      "config": "Debug",
+      "config": "Release",
       "compiler": "GCC",
       "cxx-compiler": "/usr/bin/g++-13",
       "c-compiler": "/usr/bin/gcc-13",
