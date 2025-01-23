@@ -93,9 +93,10 @@ def test_decimate(tmp_path, dec_params):
     # So instead we build the whole MeshLib with Clang 18 (only on ubuntu 20.04 arm) when building the wheels,
     # but when building ML we simply disable the offending tests (makes no sense to use Clang 18 for that,
     # since the library users will then face this ABI incompatibility).
-    if os.getenv("MR_REGRESSION_TESTS_UBUNTUARM2004_MRBIND_ABI_ISSUES","0") == "1" and dec_params.get("hasAbiIssuesOnUbuntuArm2004Mrbind", False):
-        print('Skipping this configuration on Ubuntu Arm 20.04')
-        return
+
+    # if os.getenv("MR_REGRESSION_TESTS_UBUNTUARM2004_MRBIND_ABI_ISSUES","0") == "1" and dec_params.get("hasAbiIssuesOnUbuntuArm2004Mrbind", False):
+    #     print('Skipping this configuration on Ubuntu Arm 20.04')
+    #     return
 
     #  Load input meshes
     input_folder = Path(test_files_path) / "algorithms" / "decimate" / "R0003C_V4-16aug19"
