@@ -110,7 +110,10 @@ int main( int argc, char** argv )
                 "  print( \"mrmeshpy.\" + f )\n"
                 "print( \"\\n\" )";
 
-            if ( !MR::EmbeddedPython::runString( str ) )
+            bool ok = MR::EmbeddedPython::runString( str );
+            MR::EmbeddedPython::shutdown();
+
+            if ( !ok )
                 return 1;
         }
 

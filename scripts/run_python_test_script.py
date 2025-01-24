@@ -2,10 +2,13 @@ import os
 import sys
 import platform
 import argparse
+import shutil
 
 parser = argparse.ArgumentParser(description="Python Test Script")
 
 parser.add_argument("-cmd", dest="cmd", type=str, help='Overwrite python run cmd')
+parser.add_argument('-multi-cmd', dest='multi_cmd', action='store_true', help='Repeat tests several times, with python versions taken from `python_versions.txt`. Replaces `-cmd`.')
+parser.add_argument('-create-venv', dest='create_venv', action='store_true', help='Create a venv and install the dependencies in it. Can combine with `-multi-cmd`.')
 parser.add_argument("-d", dest="dir", type=str, help='Path to tests')
 parser.add_argument("-s", dest="smoke", type=str, help='Run reduced smoke set')
 parser.add_argument("-bv", dest="bindings_vers", type=str,
@@ -16,11 +19,11 @@ parser.add_argument("-a", dest="pytest_args", type=str,
 args = parser.parse_args()
 print(args)
 
-python_cmd = "py -3.11 "
+python_cmds = ["py -3.11"]
 platformSystem = platform.system()
 
 if platformSystem == 'Linux':
-    python_cmd = "python3 "
+    python_cmds = ["python3"]
 
     os_name = ""
     os_version = ""
@@ -34,22 +37,28 @@ if platformSystem == 'Linux':
 
     if "ubuntu" in os_name.lower():
         if os_version.startswith("20"):
-            python_cmd = "python3.8 "
+            python_cmds = ["python3.8"]
         elif os_version.startswith("22"):
-            python_cmd = "python3.10 "
+            python_cmds = ["python3.10"]
     elif "fedora" in os_name.lower():
         if os_version.startswith("35"):
-            python_cmd = "python3.9 "
+            python_cmds = ["python3.9"]
         elif os_version.startswith("37"):
-            python_cmd = "python3.11 "
+            python_cmds = ["python3.11"]
         elif os_version.startswith("39"):
-            python_cmd = "python3.12 "
+            python_cmds = ["python3.12"]
 
 elif platformSystem == 'Darwin':
-    python_cmd = "python3.10 "
+    python_cmds = ["python3.10"]
 
 if args.cmd:
-    python_cmd = str(args.cmd).strip() + " "
+    python_cmds = [str(args.cmd).strip()]
+elif args.multi_cmd:
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/mrbind-pybind11/python_versions.txt") as file:
+        if platform.system() == "Windows":
+            python_cmds = ["py -" + line.rstrip() for line in file]
+        else:
+            python_cmds = ["python" + line.rstrip() for line in file]
 
 directory = os.getcwd()
 try:
@@ -69,9 +78,6 @@ else:
 os.environ["MeshLibPyModulesPath"] = os.getcwd()
 os.chdir(directory)
 
-# remove meshlib package if installed to not shadow dynamically attached
-os.system(python_cmd + "-m pip uninstall -y meshlib")
-
 #command line to start test
 pytest_cmd = "-m pytest -s -v --basetemp=../pytest_temp --durations 30"
 if args.bindings_vers == '2':
@@ -89,8 +95,38 @@ else:
 if args.pytest_args:
     pytest_cmd += f' {args.pytest_args}'
 
-print(python_cmd + pytest_cmd)
-res = os.system(python_cmd + pytest_cmd)
+failed = False
+venv_failed = False
+for py_cmd in python_cmds:
+    if platform.system() == "Darwin" and shutil.which(py_cmd) is None:
+        continue; # Skip if no such command. Some python versions are not supported on some macs.
 
-if res != 0:
+    # remove meshlib package if installed to not shadow dynamically attached
+    os.system(py_cmd + " -m pip uninstall -y meshlib")
+
+    if args.create_venv:
+        print("CREATING VENV --- [  " + py_cmd + " -m venv venv_" + py_cmd)
+        if os.system(py_cmd + " -m venv venv_" + py_cmd) != 0:
+            venv_failed = True
+        if os.system(". venv_" + py_cmd + "/bin/activate && pip install pytest numpy"):
+            venv_failed = True
+        py_cmd_fixed = ". venv_" + py_cmd + "/bin/activate && " + py_cmd
+    else:
+        py_cmd_fixed = py_cmd
+
+    print(py_cmd_fixed + " " + pytest_cmd)
+    if os.system(py_cmd_fixed + " " + pytest_cmd) != 0:
+        failed = True
+
+    if args.create_venv:
+        shutil.rmtree("venv_" + py_cmd);
+        print("] --- DELETING VENV")
+
+if venv_failed:
+    print("ERROR: Couldn't create some of the venvs!")
+
+if failed:
+    print("ERROR: Some tests failed!")
+
+if failed or venv_failed:
     sys.exit(1)

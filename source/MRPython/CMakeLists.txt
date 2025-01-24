@@ -14,14 +14,30 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 IF(APPLE)
   target_link_libraries(${PROJECT_NAME} PRIVATE
     MRMesh
-    Python::Python
     spdlog
+    Python::Python
+    pybind11nonlimitedapi_stubs
+    ${CMAKE_DL_LIBS}
   )
 ELSE()
   target_link_libraries(${PROJECT_NAME} PRIVATE
     MRMesh
-    Python::Python
     spdlog::spdlog
+    pybind11nonlimitedapi_stubs
+    ${CMAKE_DL_LIBS}
+  )
+ENDIF()
+
+# Don't emit undefined references. We need this because we don't want to link to a specific Python version.
+# The flag we're removing here is something we only set on Linux, in `CompilerOptions.cmake`.
+string(REPLACE "-Wl,-z,defs" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${Python_INCLUDE_DIRS})
+
+# `dladdr` in our patched `PYBIND11_MODULE(...)` needs this.
+IF(NOT WIN32)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE
+    _GNU_SOURCE
   )
 ENDIF()
 
@@ -58,4 +74,3 @@ install(
   NAMESPACE MeshLib::
   DESTINATION ${MR_CONFIG_DIR}
 )
-

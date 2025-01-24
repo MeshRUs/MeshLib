@@ -25,7 +25,11 @@ public:
     };
     MRPYTHON_API static Config pythonConfig; // Set this once before running anything.
 
-    static MRPYTHON_API bool isAvailable();
+    MRPYTHON_API static bool isAvailable();
+
+    // If you have used `runScript()` at least once, you should call this before terminating the program.
+    // Otherwise you can get a crash in Python cleanup. I have only observed this with our patched Pybind.
+    MRPYTHON_API static void shutdown();
 
     // Returns true if the interpreter is busy running something.
     // If you try to run something else, your thread will block until it's done.
@@ -34,11 +38,11 @@ public:
     // Returns false on failure.
     // If `onDoneAsync` is set, doesn't wait for the script to finish.
     // Will call `onDoneAsync` asynchronously when done (from the Python interpreter thread).
-    static MRPYTHON_API bool runString( std::string pythonString, std::function<void( bool success )> onDoneAsync = nullptr );
+    MRPYTHON_API static bool runString( std::string pythonString, std::function<void( bool success )> onDoneAsync = nullptr );
 
-    static MRPYTHON_API bool runScript( const std::filesystem::path& path );
+    MRPYTHON_API static bool runScript( const std::filesystem::path& path );
 
-    static MRPYTHON_API bool isPythonScript( const std::filesystem::path& path );
+    MRPYTHON_API static bool isPythonScript( const std::filesystem::path& path );
 private:
     EmbeddedPython();
     EmbeddedPython( const EmbeddedPython& ) = delete;
@@ -49,7 +53,8 @@ private:
     void ensureInterpreterThreadIsRunning_();
 
     MRPYTHON_API static EmbeddedPython& instance_();
-    bool available_{ false };
+    bool available_ = false;
+    bool shutdownCalled_ = false;
 
     enum class State
     {

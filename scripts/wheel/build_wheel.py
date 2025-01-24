@@ -4,6 +4,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import re
 
 from argparse import ArgumentParser
 from string import Template
@@ -37,7 +38,7 @@ def install_packages():
         ["pip", "install", "--upgrade", "pip"]
     )
     subprocess.check_call(
-        ["pip", "install", "--upgrade", *packages]
+        ["pip", "install", "--upgrade", "numpy", *packages]
     )
 
 
@@ -58,11 +59,20 @@ def setup_workspace(version, modules, plat_name):
     shutil.copy(SOURCE_DIR / "source" / "MRViewer" / "MRLightTheme.json", WHEEL_SRC_DIR)
     shutil.copy(SOURCE_DIR / "thirdparty" / "fontawesome-free" / "fa-solid-900.ttf", WHEEL_SRC_DIR)
     shutil.copy(SOURCE_DIR / "thirdparty" / "Noto_Sans" / "NotoSansSC-Regular.otf", WHEEL_SRC_DIR)
+    pybind_shims = []
+    py_versions = []
+    for pybind_shim in LIB_DIR_MESHLIB.glob("*pybind11nonlimitedapi_meshlib_*"):
+        shutil.copy(pybind_shim, WHEEL_SRC_DIR)
+        pybind_shim_name = os.path.basename(pybind_shim)
+        pybind_shims.append(pybind_shim_name)
+        py_versions.append(int(re.sub("\\..*", "", re.sub(".*pybind11nonlimitedapi_meshlib_3\\.", "", pybind_shim_name))));
+    py_versions.sort()
 
     shutil.copy(WHEEL_SCRIPT_DIR / "pyproject.toml", WHEEL_ROOT_DIR)
 
     # generate setup.cfg
     package_files = [
+        *pybind_shims,
         "MRDarkTheme.json",
         "MRLightTheme.json",
         "fa-solid-900.ttf",
@@ -77,7 +87,7 @@ def setup_workspace(version, modules, plat_name):
         config = Template(config_template_file.read()).substitute(
             VERSION=version,
             PACKAGE_DATA=", ".join(package_files),
-            PYTHON_TAG=f"py{sys.version_info.major}{sys.version_info.minor}",
+            PYTHON_TAG=".".join(f"py3{x}" for x in py_versions),
             PLAT_NAME=plat_name,
         )
     with open(WHEEL_ROOT_DIR / "setup.cfg", 'w') as config_file:
@@ -123,6 +133,9 @@ def build_wheel():
                 # https://stackoverflow.com/questions/78817088/vsruntime-dlls-conflict-after-delvewheel-repair
                 "--no-dll", "msvcp140.dll;vcruntime140_1.dll;vcruntime140.dll",
                 "--add-path", LIB_DIR,
+                # This is needed to catch our `pybind11nonlimitedapi_meshlib_3.X.dll` on Windows. Otherwise they don't get patched,
+                # and then can't find `pybind11nonlimitedapi_stubs.dll`, which does get patched.
+                "--analyze-existing",
                 wheel_file
             ]
         )

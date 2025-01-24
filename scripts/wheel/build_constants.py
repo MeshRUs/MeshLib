@@ -23,7 +23,8 @@ LIB_EXTENSION = {
     'Windows': ".pyd",
 }[SYSTEM]
 LIB_DIR = {
-    'Darwin': SOURCE_DIR / "build" / "Release" / "bin" / "meshlib",
-    'Linux': SOURCE_DIR / "build" / "Release" / "bin" / "meshlib",
+    'Darwin': SOURCE_DIR / "build" / "Release" / "bin",
+    'Linux': SOURCE_DIR / "build" / "Release" / "bin",
     'Windows': SOURCE_DIR / "source" / "x64" / "Release",
 }[SYSTEM]
+LIB_DIR_MESHLIB = LIB_DIR / "meshlib"

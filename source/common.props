@@ -35,7 +35,7 @@
     <PythonIncludePath>$(VcpkgCurrentInstalledDir)\include\python3.11\</PythonIncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Globals">
-    <PythonLibPath>$(VcpkgCurrentInstalledDir)\lib\python$(PythonVersion).lib</PythonLibPath>
+    <PythonLibPath>$(VcpkgCurrentInstalledDir)\lib\python3.lib</PythonLibPath>
     <PythonDllPath>$(VcpkgCurrentInstalledDir)\bin\python$(PythonVersion).dll</PythonDllPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
@@ -46,12 +46,13 @@
       <!-- /utf-8 to resolve https://github.com/MeshInspector/MeshLib/issues/2780 -->
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <!-- _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR to avoid breaking changes in Visual Studio 2022 making binaries incompatible with older msvc.dlls -->
-      <PreprocessorDefinitions>MR_PROJECT_NAME="$(MeshLibProjectName)";IMGUI_USER_CONFIG="imgui/MRCustomImGuiConfig.h";NOMINMAX;_CRT_SECURE_NO_DEPRECATE;ImDrawIdx=unsigned;SPDLOG_COMPILED_LIB;SPDLOG_SHARED_LIB;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;IMGUI_ENABLE_FREETYPE;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;MRIOEXTRAS_OPENCASCADE_USE_XDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- Following is needed for our patched pybind: PYBIND11_NONLIMITEDAPI_LIB_SUFFIX_FOR_MODULE="meshlib";Py_LIMITED_API=0x030800f0; -->
+      <PreprocessorDefinitions>MR_PROJECT_NAME="$(MeshLibProjectName)";IMGUI_USER_CONFIG="imgui/MRCustomImGuiConfig.h";NOMINMAX;_CRT_SECURE_NO_DEPRECATE;ImDrawIdx=unsigned;SPDLOG_COMPILED_LIB;SPDLOG_SHARED_LIB;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;IMGUI_ENABLE_FREETYPE;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;MRIOEXTRAS_OPENCASCADE_USE_XDE;PYBIND11_NONLIMITEDAPI_LIB_SUFFIX_FOR_MODULE="meshlib";Py_LIMITED_API=0x030800f0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MeshLibSourceDir);$(PythonIncludePath);$(MeshLibDir)thirdparty\parallel-hashmap\;$(MeshLibDir)thirdparty\pybind11\include\;$(VcpkgCurrentInstalledDir)\include\suitesparse\;$(MeshLibDir)thirdparty\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
-      <!-- 
+      <!--
            warning C4061: enumerator V in switch of enum E is not explicitly handled by a case label
            warning C4250: 'class1': inherits 'class2' via dominance
            warning C4324: structure was padded due to alignment specifier
@@ -79,7 +80,7 @@
            warning C5031: #pragma warning(pop): likely mismatch, popping warning state pushed in different file
            warning C5039: pointer or reference to potentially throwing function passed to 'extern "C"' function under -EHc. Undefined behavior may occur if this function throws an exception.
            warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-           warning C5104: found 'L#x' in macro replacement list, did you mean 'L""#x'? 
+           warning C5104: found 'L#x' in macro replacement list, did you mean 'L""#x'?
            warning C5105: macro expansion producing 'defined' has undefined behavior
            warning C5219: implicit conversion from 'int' to 'float', possible loss of data
            warning C5243: using incomplete class can cause potential one definition rule violation due to ABI limitation

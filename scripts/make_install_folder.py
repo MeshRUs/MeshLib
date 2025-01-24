@@ -81,6 +81,8 @@ def copy_lib():
 		os.remove(f)
 	for f in glob.glob(os.path.join(it.path_to_libs, "__init__.py")):
 		os.remove(f)
+	for f in glob.glob(os.path.join(it.path_to_app, "*/*pybind11nonlimitedapi_meshlib_*")):
+		os.remove(f)
 
 it.prepare_includes_list = prepare_includes_list
 it.copy_includes = copy_includes

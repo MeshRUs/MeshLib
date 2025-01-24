@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
-IF(APPLE)
-  include(ConfigureHomebrew)
-ENDIF()
 
 IF(NOT MR_EMSCRIPTEN AND NOT APPLE AND EXISTS /usr/bin/time)
   # print compile time of each translation unit in the CSV format (user time, system time, command)
@@ -46,14 +43,6 @@ IF(MR_EMSCRIPTEN)
   set(MESHLIB_BUILD_MESHCONV OFF)
 ENDIF()
 
-option(MESHLIB_KEEP_CTEST_TARGETS "Keep default CTest targets (Continuous*, Experimental*, Nightly*, etc.)" OFF)
-IF(NOT MESHLIB_KEEP_CTEST_TARGETS)
-  set_property(GLOBAL PROPERTY
-    CTEST_TARGETS_ADDED 1
-  )
-ENDIF()
-include(CTest)
-
 set(MESHLIB_THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/thirdparty")
 
 set(MESHLIB_THIRDPARTY_ROOT_DIR "${PROJECT_SOURCE_DIR}" CACHE PATH "Thirdparty library location")
@@ -66,6 +55,14 @@ ENDIF()
 IF(EXISTS "${MESHLIB_THIRDPARTY_ROOT_DIR}/lib")
   link_directories(${MESHLIB_THIRDPARTY_ROOT_DIR}/lib)
 ENDIF()
+
+option(MESHLIB_KEEP_CTEST_TARGETS "Keep default CTest targets (Continuous*, Experimental*, Nightly*, etc.)" OFF)
+IF(NOT MESHLIB_KEEP_CTEST_TARGETS)
+  set_property(GLOBAL PROPERTY
+    CTEST_TARGETS_ADDED 1
+  )
+ENDIF()
+include(CTest)
 
 IF(APPLE)
   # need to hardcode some path to fix wheel (no option to pass path)
@@ -176,6 +173,10 @@ ELSE()
   ENDIF()
 ENDIF()
 
+IF(APPLE)
+  include(ConfigureHomebrew)
+ENDIF()
+
 IF(MESHLIB_BUILD_MRVIEWER)
   set(IMGUI_DIR ${MESHLIB_THIRDPARTY_ROOT_DIR}/include/imgui)
   include_directories(${IMGUI_DIR})
@@ -230,6 +231,16 @@ IF(NOT MR_EMSCRIPTEN)
       ENDIF()
     ENDIF()
   ENDIF()
+ENDIF()
+
+IF(NOT MR_EMSCRIPTEN)
+  set(PYBIND11_NONLIMITEDAPI_PYTHON_MIN_VERSION_HEX 0x030800f0 CACHE STRING "") # Python 3.8
+  set(PYBIND11_NONLIMITEDAPI_SUFFIX "_meshlib" CACHE STRING "")
+  set(PYBIND11_NONLIMITEDAPI_LIBRARY_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/meshlib" CACHE PATH "")
+  set(PYBIND11_NONLIMITEDAPI_INSTALL_LIBDIR_STUBS "${MR_MAIN_LIB_DIR}" CACHE PATH "")
+  set(PYBIND11_NONLIMITEDAPI_INSTALL_LIBDIR_SHIMS "${MR_PY_LIB_DIR}" CACHE PATH "")
+  option(PYBIND11_NONLIMITEDAPI_BUILD_STUBS OFF)
+  add_subdirectory(${MESHLIB_THIRDPARTY_DIR}/pybind11/source/non_limited_api ./meshlib)
 ENDIF()
 
 IF(NOT MR_EMSCRIPTEN)

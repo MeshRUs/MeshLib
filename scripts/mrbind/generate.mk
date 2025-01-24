@@ -82,6 +82,13 @@ endif
 # Set to 1 if you're planning to make a wheel from this module.
 FOR_WHEEL := 0
 override FOR_WHEEL := $(filter-out 0,$(FOR_WHEEL))
+$(info Those modules are for a Python wheel? $(if $(FOR_WHEEL),YES,NO))
+
+# Build `libpybind11nonlimitedapi_meshlib_X.Y.so` shims automatically?
+# You can always build them manually via `make shims -B`.
+BUILD_SHIMS := $(FOR_WHEEL)
+override BUILD_SHIMS := $(filter-out 0,$(BUILD_SHIMS))
+$(info Build shims? $(if $(BUILD_SHIMS),YES,NO))
 
 # Set to 1 if MeshLib was built in debug mode. Ignore this on Windows. By default we're trying to guess this based on the CMake cache.
 # Currently this isn't needed for anything, hence commented out.
@@ -151,10 +158,10 @@ MRBIND_EXE := $(MRBIND_SOURCE)/build/mrbind
 ifneq ($(IS_WINDOWS),)
 CXX_FOR_BINDINGS := clang++
 else ifneq ($(IS_MACOS),)
-CXX_FOR_BINDINGS := $(HOMEBREW_DIR)/opt/llvm@$(strip $(file <$(makefile_dir)/clang_version.txt))/bin/clang++
+CXX_FOR_BINDINGS := $(HOMEBREW_DIR)/opt/llvm@$(strip $(file <$(makefile_dir)clang_version.txt))/bin/clang++
 else
 # Only on Ubuntu we don't want the default Clang version, as it can be outdated. Use the suffixed one.
-CXX_FOR_BINDINGS := clang++-$(strip $(file <$(makefile_dir)/clang_version.txt))
+CXX_FOR_BINDINGS := clang++-$(strip $(file <$(makefile_dir)clang_version.txt))
 endif
 
 # Which C++ compiler we should try to match for ABI.
@@ -190,6 +197,7 @@ else ifeq ($(MODE),none)
 else
 $(error Unknown MODE=$(MODE))
 endif
+$(info MODE: $(MODE))
 
 # Look for MeshLib dependencies relative to this. On Linux should point to the project root, because that's where `./include` and `./lib` are.
 ifneq ($(IS_WINDOWS),)
@@ -201,34 +209,71 @@ DEPS_LIB_DIR := $(DEPS_BASE_DIR)/lib
 endif
 DEPS_INCLUDE_DIR := $(DEPS_BASE_DIR)/include
 
-# Pkg-config name for Python.
-ifneq ($(and $(value PYTHON_CFLAGS),$(value PYTHON_LDFLAGS)),)
-$(info Using custom Python flags.)
-else
+# The list of Python versions, in the format `X.Y`.
+# When setting this manually, both spaces and commas work as separators.
 ifneq ($(IS_WINDOWS),)
-# Note that we're not using `DEPS_LIB_DIR` here, to always use the release Python on Windows, because that's what MeshLib itself seems to do.
-PYTHON_PKGCONF_NAME := $(basename $(notdir $(lastword $(sort $(wildcard $(DEPS_BASE_DIR)/lib/pkgconfig/python-*-embed.pc)))))
+override localappdata := $(subst \,/,$(LOCALAPPDATA))
+ifneq ($(FOR_WHEEL),)
+# On Windows wheel we use all versions we can find in appdata.
+PYTHON_VERSIONS := $(patsubst $(localappdata)/Programs/Python/Python3%,3.%,$(filter $(localappdata)/Programs/Python/Python3%,$(wildcard $(localappdata)/Programs/Python/Python3*)))
 else
-PYTHON_PKGCONF_NAME := python3-embed
+# On Windows non-wheel we detect only one version by default, the one in pkg-config.
+PYTHON_VERSIONS := $(patsubst python-%-embed,%,$(basename $(notdir $(lastword $(sort $(wildcard $(DEPS_BASE_DIR)/lib/pkgconfig/python-*-embed.pc))))))
 endif
-$(if $(PYTHON_PKGCONF_NAME),$(info Using Python version: $(PYTHON_PKGCONF_NAME:-embed=)),$(error Can't find the Python package in vcpkg))
+else
+PYTHON_VERSIONS := $(patsubst python-%-embed,%,$(call safe_shell,pkg-config --list-all | grep -Po 'python-\d.\d+-embed' | sort))
 endif
+$(if $(PYTHON_VERSIONS),,$(error Unable to guess the Python versions))
+# Adjust commas to spaces for easier manual setup.
+override PYTHON_VERSIONS := $(subst $(comma), ,$(PYTHON_VERSIONS))
+# Sort the versions.
+override PYTHON_VERSIONS := $(call safe_shell,echo $(call quote,$(PYTHON_VERSIONS)) | tr ' ' '\n' | sort -V)
+$(info Targeting Python versions: $(PYTHON_VERSIONS)$(if $(BUILD_SHIMS),, (doesn't matter because we're not building shims)))
+
+# Pick a Python version to use the headers from. Normally it doesn't matter which one we use, since defining `Py_LIMITED_API` should make them almost equivalent.
+# Here we use the smallest version from `PYTHON_VERSIONS`.
+PYTHON_HEADER_VERSION := $(firstword $(PYTHON_VERSIONS))
+$(info Using Python headers from version: $(PYTHON_HEADER_VERSION))
+
+# The min Python version to support. We use this to compute the value of the `Py_LIMITED_API` macro.
+# It's probably a good idea to have this match the value in `source/MRPython/CMakeLists.txt`.
+PYTHON_MIN_VERSION := 3.8
+override python_min_version_hex := 0x$(call safe_shell,printf "%02x%02x" $(subst ., ,$(PYTHON_MIN_VERSION)))00f0
+$(info Python min version: $(PYTHON_MIN_VERSION) (Py_LIMITED_API=$(python_min_version_hex)))
 
 # Python compilation flags.
+# Normally we guess the flags using pkg-config, in an OS-dependent way.
+# You can override this by setting `PYTHON_CFLAGS` and `PYTHON_LDFLAGS`,
+#   the values of which should contain `@X.Y@` which will be replaced with the `X.Y` Python version, or `@XY@` for the two numbers concatenated.
+# Obtain the resulting flags by calling `$(call get_python_cflags,3.10)` (and similarly for ldflags).
+PYTHON_CFLAGS :=
+PYTHON_LDFLAGS :=
+ifneq ($(and $(IS_WINDOWS),$(FOR_WHEEL)),)
+# On Windows wheel, hardcode the flags to point to appdata.
+PYTHON_CFLAGS := -I$(localappdata)/Programs/Python/Python@XY@/Include
+PYTHON_LDFLAGS := -L$(localappdata)/Programs/Python/Python@XY@/libs -lpython@XY@
+endif
+
+ifeq ($(PYTHON_CFLAGS)$(PYTHON_LDFLAGS),) # If no custom flags are specified...
 ifneq ($(IS_WINDOWS),)
 # Intentionally using non-debug Python even in Debug builds, to mimic what MeshLib does. Unsure why we do this.
-PYTHON_CFLAGS := $(if $(PYTHON_PKGCONF_NAME),$(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --cflags $(PYTHON_PKGCONF_NAME)))
-PYTHON_LDFLAGS := $(if $(PYTHON_PKGCONF_NAME),$(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --libs $(PYTHON_PKGCONF_NAME)))
+override get_python_cflags = $(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --cflags python-$1-embed)
+override get_python_ldflags = $(call safe_shell,PKG_CONFIG_PATH=$(call quote,$(DEPS_BASE_DIR)/lib/pkgconfig) PKG_CONFIG_LIBDIR=- pkg-config --libs python-$1-embed) -L$(DEPS_BASE_DIR)/lib
 else # Linux or MacOS:
-PYTHON_CFLAGS := $(call safe_shell,pkg-config --cflags $(PYTHON_PKGCONF_NAME))
+override get_python_cflags = $(call safe_shell,pkg-config --cflags python-$1-embed)
 ifneq ($(IS_MACOS),)
 # On MacOS we don't link Python, instead we use `-Xlinker -undefined -Xlinker dynamic_lookup` to avoid the errors.
 # This is important to avoid segfaults when importing the wheel.
-PYTHON_LDFLAGS :=
-else
-PYTHON_LDFLAGS := $(call safe_shell,pkg-config --libs $(PYTHON_PKGCONF_NAME))
-endif
-endif
+override get_python_ldflags =
+else # not MacOS:
+override get_python_ldflags = $(call safe_shell,pkg-config --libs python-$1-embed)
+endif # not MacOS
+endif # Linux or MacOS
+else # if using custom flags
+override get_python_cflags = $(subst @XY@,$(subst .,,$1),$(subst @X.Y@,$1,$(PYTHON_CFLAGS)))
+override get_python_ldflags = $(subst @XY@,$(subst .,,$1),$(subst @X.Y@,$1,$(PYTHON_LDFLAGS)))
+endif # using custom flags
+
 
 # Python module suffix.
 ifneq ($(IS_WINDOWS),)
@@ -240,6 +285,19 @@ PYTHON_MODULE_SUFFIX := .so
 # PYTHON_MODULE_SUFFIX := $(call safe_shell,$(PYTHON_CONFIG) --extension-suffix)
 endif
 $(info Using Python module suffix: $(PYTHON_MODULE_SUFFIX))
+
+# Shared library naming pattern.
+ifneq ($(IS_WINDOWS),)
+SHIM_SHLIB_NAMING := %.dll
+else
+ifneq ($(IS_MACOS),)
+# For consistency with the shims that CMake builds.
+SHIM_SHLIB_NAMING := lib%.dylib
+else
+SHIM_SHLIB_NAMING := lib%.so
+endif
+endif
+$(info Shared library name pattern: $(SHIM_SHLIB_NAMING))
 
 
 # Enable PCH.
@@ -359,7 +417,7 @@ endif
 
 MODULE_OUTPUT_DIR := $(MESHLIB_SHLIB_DIR)/$(PACKAGE_NAME)
 
-INPUT_FILES_BLACKLIST := $(call load_file,$(makefile_dir)/input_file_blacklist.txt)
+INPUT_FILES_BLACKLIST := $(call load_file,$(makefile_dir)input_file_blacklist.txt)
 INPUT_FILES_WHITELIST := %
 ifneq ($(IS_WINDOWS),)
 TEMP_OUTPUT_DIR := source/TempOutput/PythonBindings/x64/$(VS_MODE)
@@ -370,15 +428,16 @@ INPUT_GLOBS := *.h
 # Note that we're ignoring `operator<=>` in `mrbind_flags.txt` because it causes errors on VS2022:
 # `undefined symbol: void __cdecl std::_Literal_zero_is_expected(void)`,
 # `referenced by source/TempOutput/PythonBindings/x64/Release/binding.0.o:(public: __cdecl std::_Literal_zero::_Literal_zero<int>(int))`.
-MRBIND_FLAGS := $(call load_file,$(makefile_dir)/mrbind_flags.txt)
-MRBIND_FLAGS_FOR_EXTRA_INPUTS := $(call load_file,$(makefile_dir)/mrbind_flags_for_helpers.txt)
-COMPILER_FLAGS := $(ABI_COMPAT_FLAG) $(EXTRA_CFLAGS) $(call load_file,$(makefile_dir)/common_compiler_parser_flags.txt) $(PYTHON_CFLAGS) -I. -I$(DEPS_INCLUDE_DIR) -I$(makefile_dir)/../../source
-COMPILER_FLAGS_LIBCLANG := $(call load_file,$(makefile_dir)/parser_only_flags.txt)
+MRBIND_FLAGS := $(call load_file,$(makefile_dir)mrbind_flags.txt)
+MRBIND_FLAGS_FOR_EXTRA_INPUTS := $(call load_file,$(makefile_dir)mrbind_flags_for_helpers.txt)
+COMPILER_FLAGS := $(ABI_COMPAT_FLAG) $(EXTRA_CFLAGS) $(call load_file,$(makefile_dir)common_compiler_parser_flags.txt) -I. -I$(DEPS_INCLUDE_DIR) -I$(makefile_dir)../../source
+COMPILER_FLAGS_LIBCLANG := $(call load_file,$(makefile_dir)parser_only_flags.txt)
 # Need whitespace before `$(MRBIND_SOURCE)` to handle `~` correctly.
-COMPILER := $(CXX_FOR_BINDINGS) $(subst $(lf), ,$(call load_file,$(makefile_dir)/compiler_only_flags.txt)) -I $(MRBIND_SOURCE)/include -I$(makefile_dir)
+COMPILER := $(CXX_FOR_BINDINGS) $(subst $(lf), ,$(call load_file,$(makefile_dir)compiler_only_flags.txt)) -I $(MRBIND_SOURCE)/include -I$(makefile_dir)
 LINKER := $(CXX_FOR_BINDINGS) -fuse-ld=lld
 # Unsure if `-dynamiclib` vs `-shared` makes any difference on MacOS. I'm using the former because that's what CMake does.
-LINKER_FLAGS := $(EXTRA_LDFLAGS) -L$(DEPS_LIB_DIR) $(PYTHON_LDFLAGS) -L$(MESHLIB_SHLIB_DIR) $(addprefix -l,$(INPUT_PROJECTS)) -lMRPython $(if $(IS_MACOS),-dynamiclib,-shared) $(call load_file,$(makefile_dir)/linker_flags.txt)
+# No $(PYTHON_LDFLAGS) here, that's only for our patched Pybind library.
+LINKER_FLAGS := $(EXTRA_LDFLAGS) -L$(DEPS_LIB_DIR) -L$(DEPS_BASE_DIR)/lib -L$(MESHLIB_SHLIB_DIR) $(addprefix -l,$(INPUT_PROJECTS)) -lMRPython $(if $(IS_MACOS),-dynamiclib,-shared) $(call load_file,$(makefile_dir)linker_flags.txt)
 
 ifneq ($(IS_WINDOWS),)
 # "Cross"-compile to MSVC.
@@ -393,8 +452,8 @@ LINKER_FLAGS += -rtlib=platform
 # Don't generate .lib files.
 LINKER_FLAGS += -Wl,-noimplib
 # Library paths:
-COMPILER_FLAGS += -isystem $(makefile_dir)/../../thirdparty/pybind11/include
-COMPILER_FLAGS += -isystem $(makefile_dir)/../../thirdparty/parallel-hashmap
+COMPILER_FLAGS += -isystem $(makefile_dir)../../thirdparty/pybind11/include
+COMPILER_FLAGS += -isystem $(makefile_dir)../../thirdparty/parallel-hashmap
 COMPILER_FLAGS += -D_DLL -D_MT
 # Only seems to matter on VS2022 and not on VS2019, for some reason.
 COMPILER_FLAGS += -DNOMINMAX
@@ -416,7 +475,7 @@ COMPILER_FLAGS += -fPIC
 COMPILER_FLAGS += -DPYBIND11_COMPILER_TYPE='"_meshlib"' -DPYBIND11_BUILD_ABI='"_meshlib"'
 # MacOS rpath is quirky: 1. Must use `-rpath,` instead of `-rpath=`. 2. Must specify the flag several times, apparently can't use
 #   `:` or `;` as a separators inside of one big flag. 3. As you've noticed, it uses `@loader_path` instead of `$ORIGIN`.
-rpath_origin := $(if $(IS_MACOS),@loader_path,$$ORIGIN)
+rpath_origin := $(if $(IS_MACOS),@loader_path,$$$$ORIGIN)
 LINKER_FLAGS += -Wl,-rpath,'$(rpath_origin)' -Wl,-rpath,'$(rpath_origin)/..' -Wl,-rpath,$(call quote,$(abspath $(MODULE_OUTPUT_DIR))) -Wl,-rpath,$(call quote,$(abspath $(MESHLIB_SHLIB_DIR))) -Wl,-rpath,$(call quote,$(abspath $(DEPS_LIB_DIR)))
 ifneq ($(IS_MACOS),)
 # Hmm.
@@ -455,14 +514,44 @@ $(MODULE_OUTPUT_DIR):
 	@mkdir -p $(call quote,$@)
 
 
-# Those are used by `module_snippet` below.
 override all_outputs :=
+
+# Things for our patched pybind: --- [
+# Also setting `Py_LIMITED_API` is a part of this, but it's spread all over this makefile.
+COMPILER += -DPYBIND11_NONLIMITEDAPI_LIB_SUFFIX_FOR_MODULE='"meshlib"'
+# Pybind normally sets this to 5 in Python 3.12 and newer, and to 4 before that. But we need the same number everywhere for our modules to work on
+#   multiple different Python versions. We can't set it to 4 (since that's not compatible with the new Python, see https://github.com/pybind/pybind11/pull/4570),
+#   but we can set it to 5 unconditionally (Pybind doesn't do it by default only for ABI compatibility).
+COMPILER += -DPYBIND11_INTERNALS_VERSION=5
+# ] --- end things for our patched pybind
+
+# Build the library files for different Python versions, for our patched Pybind.
+PYBIND_LIBS_OUTPUT_DIR := $(MODULE_OUTPUT_DIR)
+PYBIND_SOURCE_DIR := $(makefile_dir)../../thirdparty/pybind11
+PYBIND_NONLIMITEDAPI_CPP := $(PYBIND_SOURCE_DIR)/source/non_limited_api/non_limited_api.cpp
+PYBIND_NONLIMITEDAPI_LIB_NAME_PREFIX := pybind11nonlimitedapi_meshlib_
+
+override shim_outputs :=
+$(foreach v,$(PYTHON_VERSIONS),\
+    $(call var,_obj := $(TEMP_OUTPUT_DIR)/$(PYBIND_NONLIMITEDAPI_LIB_NAME_PREFIX)$v.o)\
+    $(call var,_shlib := $(PYBIND_LIBS_OUTPUT_DIR)/$(patsubst %,$(SHIM_SHLIB_NAMING),$(PYBIND_NONLIMITEDAPI_LIB_NAME_PREFIX)$v))\
+    $(call var,shim_outputs += $(_shlib))\
+    $(eval $(_obj): $(PYBIND_NONLIMITEDAPI_CPP) | $(TEMP_OUTPUT_DIR) ; @echo $(call quote,[Compiling Pybind shim] $(_obj)) && $(COMPILER) $(call get_python_cflags,$v) $(COMPILER_FLAGS) $$< -c -o $$@)\
+    $(eval $(_shlib): $(_obj) ; @echo $(call quote,[Linking Pybind shim] $(_shlib)) && $(LINKER) $$^ -o $$@ $(call get_python_ldflags,$v) $(LINKER_FLAGS) -lpybind11nonlimitedapi_stubs)\
+)
+.PHONY: shims
+shims: $(shim_outputs)
+ifneq ($(BUILD_SHIMS),)
+override all_outputs += $(shim_outputs)
+endif
+
+# Those are used by `module_snippet` below.
 .PHONY: only-generate
 
 # This code segment is repeated for every module. $1 is the module name.
 override define module_snippet =
 # Which directories we search for headers.
-$(call var,_input_dirs := $(addprefix $(makefile_dir)/../../source/,$($1_InputProjects)) $($1_ExtraInputDirs))
+$(call var,_input_dirs := $(addprefix $(makefile_dir)../../source/,$($1_InputProjects)) $($1_ExtraInputDirs))
 # Input headers.
 $(call var,_input_files := $(filter-out $(INPUT_FILES_BLACKLIST),$(filter $(INPUT_FILES_WHITELIST),$(call rwildcard,$(_input_dirs),$(INPUT_GLOBS)))))
 
@@ -472,8 +561,11 @@ $(if $(ENABLE_PCH),,$(call var,$1_EnablePch :=))
 # Set the default number of fragments, if not specified.
 $(if $($1_NumFragments),,$(call var,$1_NumFragments := 1))
 
+# Pick whatever Python version for get_python_cflags, it shouldn't matter.
+$(call var,$1_CompilerFlagsPython := -DPy_LIMITED_API=$(python_min_version_hex) $(call get_python_cflags,$(PYTHON_HEADER_VERSION)))
+
 # Compiler + compiler-only flags, adjusted per module. Don't use those for parsing.
-$(call var,$1_CompilerFlagsFixed := $(COMPILER_FLAGS) -DMB_PB11_MODULE_NAME=$1 $(if $($1_DependsOn),-DMB_PB11_MODULE_DEPS=$(call quote,$(subst $(space),$(comma),$(patsubst %,"%",$($1_DependsOn))))))
+$(call var,$1_CompilerFlagsFixed := $($1_CompilerFlagsPython) $(COMPILER_FLAGS) -DMB_PB11_MODULE_NAME=$1 $(if $($1_DependsOn),-DMB_PB11_MODULE_DEPS=$(call quote,$(subst $(space),$(comma),$(patsubst %,"%",$($1_DependsOn))))))
 
 # Produce the one combined header including all our input headers.
 # And if PCH is enabled, this also includes the headers to bake.
@@ -493,7 +585,7 @@ $(call var,$1__ParserSourceOutput := $(TEMP_OUTPUT_DIR)/$1.generated.cpp)
 only-generate: $($1__ParserSourceOutput)
 $($1__ParserSourceOutput): $($1__CombinedHeaderOutput) | $(TEMP_OUTPUT_DIR)
 	@echo $(call quote,[$1] [Generating] $($1__ParserSourceOutput))
-	@$(MRBIND_EXE) $(MRBIND_FLAGS) $($1_ExtraMrbindFlags) $$(call quote,$$<) -o $$(call quote,$$@) -- $(COMPILER_FLAGS_LIBCLANG) $(COMPILER_FLAGS)
+	@$(MRBIND_EXE) $(MRBIND_FLAGS) $($1_ExtraMrbindFlags) $$(call quote,$$<) -o $$(call quote,$$@) -- $(COMPILER_FLAGS_LIBCLANG) $(COMPILER_FLAGS) $($1_CompilerFlagsPython)
 
 # Compile the PCH.
 $(call var,$1__BakedPch :=)
@@ -528,7 +620,7 @@ $(call var,$1__LinkerOutput := $(MODULE_OUTPUT_DIR)/$1$(PYTHON_MODULE_SUFFIX))
 $(call var,all_outputs += $($1__LinkerOutput))
 $($1__LinkerOutput): $$$$($1__ObjectFiles) | $(MODULE_OUTPUT_DIR)
 	@echo $$(call quote,[$1] [Linking] $$@)
-	@$(LINKER) $$^ -o $$(call quote,$$@) $(LINKER_FLAGS) $(addprefix -l,$($1_InputProjects))
+	@$(LINKER) $$^ -o $$(call quote,$$@) $(LINKER_FLAGS) $(addprefix -l,$($1_InputProjects) pybind11nonlimitedapi_stubs)
 
 # A pretty target.
 .PHONY: $1
@@ -546,7 +638,7 @@ $(call var,$1__ObjectFiles += $(_object))
 only-generate: $(_generated)
 $(_generated): $2 | $(TEMP_OUTPUT_DIR)
 	@echo $(call quote,[$1] [Generating] $(notdir $(_generated)))
-	@$(MRBIND_EXE) $(MRBIND_FLAGS_FOR_EXTRA_INPUTS) $(call quote,$2) -o $(call quote,$(_generated)) -- $(COMPILER_FLAGS_LIBCLANG) $(COMPILER_FLAGS)
+	@$(MRBIND_EXE) $(MRBIND_FLAGS_FOR_EXTRA_INPUTS) $(call quote,$2) -o $(call quote,$(_generated)) -- $(COMPILER_FLAGS_LIBCLANG) $(COMPILER_FLAGS) $($1_CompilerFlagsPython)
 $(_object): $(_generated) | $(TEMP_OUTPUT_DIR)
 	@echo $(call quote,[$1] [Compiling] $(_generated))
 	@$(COMPILER) $(call quote,$(_generated)) -c -o $(call quote,$(_object)) $($1_CompilerFlagsFixed)
@@ -568,7 +660,7 @@ $(foreach x,$(MODULES),$(foreach y,$($x_ExtraSourceFiles),$(eval $(call extra_pr
 
 # The init script.
 INIT_SCRIPT := $(MODULE_OUTPUT_DIR)/__init__.py
-$(INIT_SCRIPT): $(makefile_dir)/__init__.py
+$(INIT_SCRIPT): $(makefile_dir)__init__.py
 	@cp $< $@
 ifeq ($(IS_WINDOWS),) # If not on Windows, strip the windows-only part.
 	@gawk -i inplace '/### windows-only: \[/{x=1} {if (!x) print} x && /### \]/{x=0}' $@

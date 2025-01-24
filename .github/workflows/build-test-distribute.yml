@@ -300,9 +300,11 @@ jobs:
     secrets: inherit
 
   test-pip-build:
-    needs: config
+    needs: [ config, prepare-image ]
     if: ${{ needs.config.outputs.test_pip_build == 'true' }}
     uses: ./.github/workflows/pip-build.yml
+    with:
+      docker_image_tag: ${{ needs.config.outputs.docker_image_tag }}
 
   collect-stats:
     timeout-minutes: 5

@@ -19,6 +19,9 @@
     <ClCompile Include="MRPythonUiInteraction.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\thirdparty\pybind11nonlimitedapi_stubs.vcxproj">
+      <Project>{cb6d82fb-e91d-4d62-b82e-be644244e30a}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\mrmeshpy\mrmeshpy.vcxproj">
       <Project>{cc7f9661-34a7-4756-8791-acfd10a427eb}</Project>
     </ProjectReference>
