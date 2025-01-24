@@ -14,6 +14,11 @@ on:
     - cron: '0 17 * * *'  # Run every day at 17:00 UTC
     #- cron: '0 6 * * *'  # Run every day at 6 AM UTC
 
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   # NOTE: all output values are strings
   # use the ${{ needs.config.outputs.bool-param == 'true' }} construction to check boolean values
@@ -320,13 +325,39 @@ jobs:
           pattern: RunnerSysStats*
           merge-multiple: true
 
+      - uses: aws-actions/configure-aws-credentials@v4
+        id: aws-creds
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_CI_STAT_API_ROLE_ARN }}
+          output-credentials: true
+
+      - name: Collect stats - test
+        if: ${{ always() }}
+        env:
+          CI_STATS_AUTH_TOKEN: ${{ secrets.CI_STATS_AUTH_TOKEN }}
+          GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/devops/post_to_api.py
+
       - name: Collect stats
+        if: ${{ always() }}
         env:
           CI_STATS_AUTH_TOKEN: ${{ secrets.CI_STATS_AUTH_TOKEN }}
           GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
           GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/devops/collect_ci_stats.py
+
+      - name: Collect stats - expect to fail
+        if: ${{ always() }}
+        env:
+          CI_STATS_AUTH_TOKEN: ${{ secrets.CI_STATS_AUTH_TOKEN }}
+          GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/devops/collect_ci_stats_unauth.py
 
   update-artifacts:
     timeout-minutes: 15
